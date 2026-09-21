@@ -58,7 +58,7 @@ function addGlowEdges(mesh, color = cyan) {
 }
 
 function box(name, size, position, material = darkMat, parent = machine) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material.clone());
   mesh.name = name; mesh.position.set(...position); mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); addGlowEdges(mesh); return mesh;
 }
 function lineBox(name, size, position, material = woodMat) { return box(name, size, position, material); }
@@ -122,13 +122,15 @@ const labelObjects = labelData.map(([text,pos,color,desc]) => label(text,pos,col
 
 const pet = new THREE.Group(); machine.add(pet);
 pet.position.set(0, 4.36, 0);
-const petMaterial = new THREE.MeshBasicMaterial({ color: 0x42e7ff, transparent: true, opacity: .95, wireframe: true });
-const petGlowMaterial = new THREE.LineBasicMaterial({ color: 0x8af4ff, transparent: true, opacity: .38 });
-const petBody = new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,1.15,24), petMaterial); petBody.position.y=.58; pet.add(petBody);
+const petMaterial = new THREE.MeshStandardMaterial({ color: 0x42e7ff, emissive: 0x087d9d, emissiveIntensity: 1.8, transparent: true, opacity: .9, roughness: .16, metalness: .12 });
+const petGlowMaterial = new THREE.LineBasicMaterial({ color: 0xb8fbff, transparent: true, opacity: .95 });
+const petBody = new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,1.15,32), petMaterial); petBody.position.y=.58; pet.add(petBody);
 const petBodyGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petBody.geometry), petGlowMaterial); petBodyGlow.position.copy(petBody.position); petBodyGlow.scale.setScalar(1.025); pet.add(petBodyGlow);
-const petNeck = new THREE.Mesh(new THREE.CylinderGeometry(.14,.19,.35,24), petMaterial); petNeck.position.y=1.33; pet.add(petNeck);
+const petShoulder = new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.22,32), petMaterial); petShoulder.position.y=1.22; pet.add(petShoulder);
+const petShoulderGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petShoulder.geometry), petGlowMaterial); petShoulderGlow.position.copy(petShoulder.position); petShoulderGlow.scale.setScalar(1.03); pet.add(petShoulderGlow);
+const petNeck = new THREE.Mesh(new THREE.CylinderGeometry(.14,.19,.35,32), petMaterial); petNeck.position.y=1.45; pet.add(petNeck);
 const petNeckGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petNeck.geometry), petGlowMaterial); petNeckGlow.position.copy(petNeck.position); petNeckGlow.scale.setScalar(1.03); pet.add(petNeckGlow);
-const petCap = new THREE.Mesh(new THREE.TorusGeometry(.15, .035, 8, 24), new THREE.MeshBasicMaterial({ color: 0x8af4ff, transparent: true, opacity: .9 })); petCap.rotation.x = Math.PI / 2; petCap.position.y = 1.53; pet.add(petCap);
+const petCap = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.1,24), new THREE.MeshStandardMaterial({ color: 0xb8fbff, emissive: 0x55e9ff, emissiveIntensity: 2.5 })); petCap.position.y = 1.68; pet.add(petCap);
 pet.visible=false;
 
 const particlePositions = new Float32Array(36 * 3);
@@ -146,7 +148,7 @@ const counter = document.querySelector('#counter'), points = document.querySelec
 const phaseDetail = document.querySelector('#phase-detail'), userState = document.querySelector('#user-state'), userBadge = document.querySelector('#user-badge');
 const ledObjects = [...document.querySelectorAll('.status-leds .led')];
 const simulation = { phase: 'waiting', elapsed: 0, duration: 0, busy: false, userVerified: false, userExists: true, attempts: 0, processed: 3, points: 1240, validBottle: true };
-const phases = { face: 2.2, profile: 1.5, register: 2.0, verify: 1.3, insert: 2.1, topSensor: 1.15, validate: 1.4, descend: 1.7, zoneSensor: 1.15, compress: 2.5, impact: .9, lift: 1.45, transfer: 1.8, points: 1.35, return: 1.2, reject: 1.7 };
+const phases = { face: 3.8, profile: 1.8, register: 2.0, verify: 2.2, insert: 3.2, topSensor: 2.0, validate: 2.4, descend: 2.4, zoneSensor: 2.0, compress: 4.2, impact: 1.8, lift: 2.2, transfer: 2.3, points: 2.0, return: 1.8, reject: 2.0 };
 let showLabels = false;
 
 const clamp01 = value => Math.min(Math.max(value, 0), 1);
@@ -155,9 +157,12 @@ const easeOut = value => 1 - Math.pow(1 - value, 3);
 const lerp = (from, to, amount) => from + (to - from) * amount;
 function setStatus(text, active=false, detail='') { status.textContent=text; phaseDetail.textContent=detail; document.querySelector('#led-idle').classList.toggle('on',!active); document.querySelector('#led-active').classList.toggle('on',active); document.querySelector('#led-error').classList.remove('on'); }
 function setComponentActive(component, active) {
+  if (!component) return;
   component.scale.setScalar(active ? 1.22 : 1);
-  component.material.color.setHex(active ? 0x8af4ff : mint);
-  component.material.opacity = active ? .98 : .08;
+  if (component.material) {
+    component.material.color.setHex(active ? 0xb8fbff : mint);
+    component.material.opacity = active ? .98 : .12;
+  }
   component.children.forEach(child => { if (child.material) { child.material.color.setHex(active ? 0x8af4ff : cyan); child.material.opacity = active ? 1 : .32; } });
 }
 function beginPhase(name) {
@@ -173,10 +178,13 @@ function beginPhase(name) {
   if (name === 'face') { userState.textContent='Reconocimiento facial'; userBadge.textContent='ESCANEANDO'; }
   if (name === 'profile') { userState.textContent='Usuario existente'; userBadge.textContent='PUNTOS CARGADOS'; }
   if (name === 'register') { userState.textContent='Registro nuevo'; userBadge.textContent='NOMBRE + GRADO'; }
-  if (name === 'verify') { userState.textContent='Usuario verificado'; userBadge.textContent='VERIFICADO'; simulation.userVerified=true; insertBtn.disabled=false; }
+  if (name === 'verify') { userState.textContent='Verificando identidad'; userBadge.textContent='CONFIRMANDO'; simulation.userVerified=false; insertBtn.disabled=true; }
   if (name === 'return') { userState.textContent='Perfil preparado'; userBadge.textContent='EN ESPERA'; simulation.userVerified=false; insertBtn.disabled=true; }
   if (name === 'reject') { userBadge.textContent='REVISAR'; document.querySelector('#led-error').classList.add('on'); }
-  setComponentActive(irTop, name === 'topSensor'); setComponentActive(irZone, name === 'zoneSensor'); setComponentActive(servoArm, name === 'compress' || name === 'lift'); setComponentActive(plate, name === 'compress' || name === 'lift');
+  const compactorActive = name === 'compress' || name === 'impact' || name === 'lift';
+  setComponentActive(cameraUnit, name === 'face' || name === 'profile' || name === 'verify');
+  setComponentActive(irTop, name === 'topSensor'); setComponentActive(irZone, name === 'zoneSensor');
+  setComponentActive(servo, compactorActive); setComponentActive(servoArm, compactorActive); setComponentActive(plate, compactorActive);
 }
 function startUserRecognition() { if (simulation.busy || simulation.userVerified) return; simulation.busy=true; beginPhase('face'); }
 function startSimulation() { if (simulation.busy || !simulation.userVerified) return; simulation.busy=true; simulation.attempts += 1; simulation.validBottle = simulation.attempts % 4 !== 0; insertBtn.disabled=true; pet.visible=true; pet.position.y=4.36; pet.scale.set(1, 1, 1); particles.position.y=0; beginPhase('insert'); }
@@ -187,12 +195,14 @@ function updateSimulation(delta) {
   const progress01 = clamp01(simulation.elapsed / simulation.duration);
   const smooth = easeInOut(progress01);
   if (simulation.phase === 'face') {
-    lens.scale.setScalar(1 + Math.sin(simulation.elapsed * 10) * .12);
-    irTop.scale.setScalar(1 + Math.sin(simulation.elapsed * 12) * .14);
+    const scan = 1.12 + Math.sin(simulation.elapsed * 9) * .18;
+    lens.scale.setScalar(scan); cameraUnit.scale.set(1.12, scan, 1.12);
+    lens.material.emissiveIntensity = 5 + Math.sin(simulation.elapsed * 12) * 2;
   } else if (simulation.phase === 'profile') {
-    lens.scale.setScalar(1.12 + Math.sin(simulation.elapsed * 6) * .06);
+    lens.scale.setScalar(1.18 + Math.sin(simulation.elapsed * 6) * .06);
+    lens.material.emissiveIntensity = 7;
   } else if (simulation.phase === 'verify') {
-    lens.scale.setScalar(1.22 - smooth * .22);
+    lens.scale.setScalar(1.22 - smooth * .22); lens.material.emissiveIntensity = 6;
   } else if (simulation.phase === 'insert') {
     pet.position.y = lerp(4.36, 3.42, easeOut(progress01));
     pet.scale.set(lerp(.96, 1, smooth), lerp(.96, 1, smooth), lerp(.96, 1, smooth));
@@ -216,24 +226,26 @@ function updateSimulation(delta) {
     irZone.scale.setScalar(pulse);
   } else if (simulation.phase === 'compress') {
     const weighted = easeInOut(progress01);
-    plate.position.y = lerp(3.18, 2.48, weighted);
-    servoArm.rotation.z = lerp(-.2, -1.0, easeOut(progress01));
-    pet.position.y = lerp(3.42, 3.37, weighted);
-    pet.scale.set(lerp(1, 1.22, weighted), lerp(1, .38, weighted), lerp(1, 1.22, weighted));
-    particleMaterial.opacity = Math.sin(progress01 * Math.PI) * .85;
-    particles.rotation.y += delta * 1.8;
+    plate.position.y = lerp(3.18, 2.36, weighted);
+    servoArm.rotation.z = lerp(-.2, -1.18, easeOut(progress01));
+    pet.position.y = lerp(3.42, 3.24, weighted);
+    pet.scale.set(lerp(1, 1.42, weighted), lerp(1, .22, weighted), lerp(1, 1.42, weighted));
+    petMaterial.emissiveIntensity = 2.5 + weighted * 3;
+    particleMaterial.opacity = Math.sin(progress01 * Math.PI) * .9;
+    particles.rotation.y += delta * 2.4;
   } else if (simulation.phase === 'impact') {
-    pet.scale.set(1.22, .38, 1.22); pet.position.y = 3.37;
-    impactRing.material.opacity = Math.sin(progress01 * Math.PI) * .95;
-    impactRing.scale.setScalar(1 + easeOut(progress01) * 1.35);
-    particles.rotation.y += delta * 3.4; particleMaterial.opacity = 1 - progress01 * .35;
+    pet.scale.set(1.42, .22, 1.42); pet.position.y = 3.24;
+    plate.position.y = 2.36; servoArm.rotation.z = -1.18;
+    impactRing.material.opacity = Math.sin(progress01 * Math.PI) * 1;
+    impactRing.scale.setScalar(1 + easeOut(progress01) * 1.6);
+    particles.rotation.y += delta * 3.4; particleMaterial.opacity = .85;
   } else if (simulation.phase === 'lift') {
-    plate.position.y = lerp(2.48, 3.18, easeOut(progress01));
-    servoArm.rotation.z = lerp(-1.0, -.2, easeOut(progress01));
-    pet.position.y = 3.37; pet.scale.set(1.22, .38, 1.22); particleMaterial.opacity = .4 * (1 - progress01);
+    plate.position.y = lerp(2.36, 3.18, easeOut(progress01));
+    servoArm.rotation.z = lerp(-1.18, -.2, easeOut(progress01));
+    pet.position.y = 3.24; pet.scale.set(1.42, .22, 1.42); particleMaterial.opacity = .45 * (1 - progress01);
   } else if (simulation.phase === 'transfer') {
-    pet.position.y = lerp(3.37, .94, easeInOut(progress01));
-    pet.scale.set(lerp(1.22, .64, smooth), lerp(.38, .34, smooth), lerp(1.22, .64, smooth));
+    pet.position.y = lerp(3.24, .94, easeInOut(progress01));
+    pet.scale.set(lerp(1.42, .64, smooth), lerp(.22, .34, smooth), lerp(1.42, .64, smooth));
     particleMaterial.opacity = .28 * (1 - progress01);
   } else if (simulation.phase === 'points') {
     particleMaterial.opacity = 1 - progress01;
@@ -247,7 +259,7 @@ function updateSimulation(delta) {
     if (simulation.phase === 'points') { simulation.processed += 1; simulation.points += 25; counter.textContent=String(simulation.processed).padStart(3,'0'); progress.style.width=`${Math.min(simulation.processed*10,100)}%`; }
     if (simulation.phase === 'face') beginPhase(simulation.userExists ? 'profile' : 'register');
     else if (simulation.phase === 'profile' || simulation.phase === 'register') beginPhase('verify');
-    else if (simulation.phase === 'verify') { simulation.busy=false; insertBtn.disabled=false; setStatus('USUARIO VERIFICADO',false,'INSERTA LA BOTELLA · perfil existente · puntos cargados'); }
+    else if (simulation.phase === 'verify') { simulation.busy=false; simulation.userVerified=true; insertBtn.disabled=false; userState.textContent='Usuario verificado'; userBadge.textContent='VERIFICADO'; setStatus('USUARIO VERIFICADO',false,'INSERTA LA BOTELLA · perfil existente · puntos cargados'); }
     else if (simulation.phase === 'validate') beginPhase(simulation.validBottle ? 'descend' : 'reject');
     else if (simulation.phase === 'reject') finishSimulation();
     else if (simulation.phase === 'return') { simulation.busy=false; insertBtn.disabled=true; setStatus('ESPERANDO USUARIO',false,'Cámara activa · acércate para comenzar'); setTimeout(startUserRecognition, 1300); }
@@ -255,8 +267,15 @@ function updateSimulation(delta) {
   }
 }
 insertBtn.addEventListener('click', startSimulation);
-toggleBtn.addEventListener('click', () => { showLabels=!showLabels; labelObjects.forEach(item => item.visible=showLabels); toggleBtn.classList.toggle('active',showLabels); toggleBtn.innerHTML = `<span class="button-icon">◈</span> ${showLabels?'Ocultar etiquetas':'Mostrar etiquetas'}`; });
-labelObjects.forEach(item => item.visible = showLabels);
+toggleBtn.addEventListener('click', () => {
+  showLabels = !showLabels;
+  labelObjects.forEach(item => { item.visible = showLabels; });
+  toggleBtn.classList.toggle('active', showLabels);
+  toggleBtn.setAttribute('aria-pressed', String(showLabels));
+  toggleBtn.innerHTML = `<span class="button-icon">◈</span> ${showLabels ? 'Ocultar etiquetas' : 'Mostrar etiquetas'}`;
+});
+labelObjects.forEach(item => { item.visible = false; });
+toggleBtn.setAttribute('aria-pressed', 'false');
 toggleBtn.innerHTML = '<span class="button-icon">◈</span> Mostrar etiquetas';
 insertBtn.disabled = true;
 setStatus('ESPERANDO USUARIO',false,'Cámara activa · acércate para comenzar');
