@@ -146,9 +146,10 @@ machine.add(impactRing);
 const status = document.querySelector('#status-text'), insertBtn = document.querySelector('#insert-btn'), toggleBtn = document.querySelector('#explode-btn');
 const counter = document.querySelector('#counter'), points = document.querySelector('#points'), progress = document.querySelector('#daily-progress');
 const phaseDetail = document.querySelector('#phase-detail'), userState = document.querySelector('#user-state'), userBadge = document.querySelector('#user-badge');
+const uiPanel = document.querySelector('#ui-panel');
 const ledObjects = [...document.querySelectorAll('.status-leds .led')];
 const simulation = { phase: 'waiting', elapsed: 0, duration: 0, busy: false, userVerified: false, userExists: true, attempts: 0, processed: 3, points: 1240, validBottle: true };
-const phases = { face: 3.8, profile: 1.8, register: 2.0, verify: 2.2, insert: 3.2, topSensor: 2.0, validate: 2.4, descend: 2.4, zoneSensor: 2.0, compress: 4.2, impact: 1.8, lift: 2.2, transfer: 2.3, points: 2.0, return: 1.8, reject: 2.0 };
+const phases = { face: 4.6, profile: 2.1, register: 2.2, verify: 2.5, insert: 3.4, topSensor: 2.4, validate: 3.6, descend: 2.6, zoneSensor: 2.3, compress: 5.4, impact: 2.4, lift: 2.5, transfer: 2.5, points: 2.8, return: 2.0, reject: 2.2 };
 let showLabels = false;
 
 const clamp01 = value => Math.min(Math.max(value, 0), 1);
@@ -167,6 +168,11 @@ function setComponentActive(component, active) {
 }
 function beginPhase(name) {
   simulation.phase=name; simulation.elapsed=0; simulation.duration=phases[name];
+  points.style.color = '';
+  points.style.textShadow = '';
+  points.style.transform = '';
+  uiPanel.style.boxShadow = '';
+  impactRing.material.color.setHex(0x8af4ff);
   const phaseInfo = {
     face:['RECONOCIENDO','Cámara activa · escaneo facial en progreso'], profile:['CARGANDO PERFIL','Usuario existente · cargando puntos'], register:['REGISTRANDO USUARIO','Nuevo usuario · nombre y grado'], verify:['USUARIO VERIFICADO','Identidad confirmada · inserta la botella'], insert:['INSERTANDO BOTELLA','La botella entra por la tolva'],
     topSensor:['SENSOR IR SUPERIOR','Detección confirmada · botella localizada'], validate:['VALIDANDO BOTELLA','Sensores verifican material plástico PET'], descend:['DESCENDIENDO','Botella válida · baja a la cámara'], zoneSensor:['SENSOR IR DE ZONA','Cámara despejada · botella en posición'],
@@ -187,8 +193,33 @@ function beginPhase(name) {
   setComponentActive(servo, compactorActive); setComponentActive(servoArm, compactorActive); setComponentActive(plate, compactorActive);
 }
 function startUserRecognition() { if (simulation.busy || simulation.userVerified) return; simulation.busy=true; beginPhase('face'); }
-function startSimulation() { if (simulation.busy || !simulation.userVerified) return; simulation.busy=true; simulation.attempts += 1; simulation.validBottle = simulation.attempts % 4 !== 0; insertBtn.disabled=true; pet.visible=true; pet.position.y=4.36; pet.scale.set(1, 1, 1); particles.position.y=0; beginPhase('insert'); }
-function finishSimulation() { simulation.busy=false; pet.visible=false; pet.position.y=4.36; pet.scale.set(1, 1, 1); plate.position.y=3.18; servoArm.rotation.z=-.2; particleMaterial.opacity=0; impactRing.material.opacity=0; beginPhase('return'); }
+function startSimulation() {
+  if (simulation.busy || !simulation.userVerified || simulation.phase !== 'verify') return;
+  simulation.busy = true;
+  simulation.attempts += 1;
+  simulation.validBottle = simulation.attempts % 4 !== 0;
+  insertBtn.disabled = true;
+  pet.visible = true;
+  pet.position.y = 4.36;
+  pet.scale.set(1, 1, 1);
+  petMaterial.color.setHex(0x42e7ff);
+  petGlowMaterial.color.setHex(0xb8fbff);
+  petMaterial.emissiveIntensity = 1.8;
+  particles.position.y = 0;
+  beginPhase('insert');
+}
+function finishSimulation() {
+  simulation.busy = false;
+  simulation.userVerified = false;
+  pet.visible = false;
+  pet.position.y = 4.36;
+  pet.scale.set(1, 1, 1);
+  plate.position.y = 3.18;
+  servoArm.rotation.z = -.2;
+  particleMaterial.opacity = 0;
+  impactRing.material.opacity = 0;
+  beginPhase('return');
+}
 function updateSimulation(delta) {
   if (!simulation.busy) return;
   simulation.elapsed += Math.min(delta, .05);
@@ -207,11 +238,14 @@ function updateSimulation(delta) {
     pet.position.y = lerp(4.36, 3.42, easeOut(progress01));
     pet.scale.set(lerp(.96, 1, smooth), lerp(.96, 1, smooth), lerp(.96, 1, smooth));
   } else if (simulation.phase === 'topSensor') {
-    const pulse = 1 + Math.sin(simulation.elapsed * 14) * .16;
+    const pulse = 1.12 + Math.sin(simulation.elapsed * 18) * .28;
     irTop.scale.setScalar(pulse);
+    irTop.material.opacity = .72 + (Math.sin(simulation.elapsed * 18) + 1) * .14;
   } else if (simulation.phase === 'validate') {
-    const pulse = 1 + Math.sin(simulation.elapsed * 16) * .1;
+    const pulse = 1.18 + Math.sin(simulation.elapsed * 20) * .3;
     irTop.scale.setScalar(pulse); irZone.scale.setScalar(pulse);
+    irTop.material.opacity = .8 + (Math.sin(simulation.elapsed * 20) + 1) * .1;
+    irZone.material.opacity = .8 + (Math.sin(simulation.elapsed * 20 + Math.PI) + 1) * .1;
     petMaterial.color.setHex(simulation.validBottle ? 0x42e7ff : 0xff527a);
     petGlowMaterial.color.setHex(simulation.validBottle ? 0x8af4ff : 0xff527a);
   } else if (simulation.phase === 'reject') {
@@ -226,30 +260,42 @@ function updateSimulation(delta) {
     irZone.scale.setScalar(pulse);
   } else if (simulation.phase === 'compress') {
     const weighted = easeInOut(progress01);
-    plate.position.y = lerp(3.18, 2.36, weighted);
-    servoArm.rotation.z = lerp(-.2, -1.18, easeOut(progress01));
-    pet.position.y = lerp(3.42, 3.24, weighted);
-    pet.scale.set(lerp(1, 1.42, weighted), lerp(1, .22, weighted), lerp(1, 1.42, weighted));
-    petMaterial.emissiveIntensity = 2.5 + weighted * 3;
-    particleMaterial.opacity = Math.sin(progress01 * Math.PI) * .9;
-    particles.rotation.y += delta * 2.4;
+    plate.position.y = lerp(3.18, 2.18, weighted);
+    servoArm.rotation.z = lerp(-.2, -1.35, easeOut(progress01));
+    pet.position.y = lerp(3.42, 3.12, weighted);
+    pet.scale.set(lerp(1, 1.68, weighted), lerp(1, .16, weighted), lerp(1, 1.68, weighted));
+    petMaterial.emissiveIntensity = 2.5 + weighted * 5;
+    const compressionPulse = Math.sin(progress01 * Math.PI);
+    particleMaterial.opacity = compressionPulse * 1.25;
+    impactRing.material.opacity = compressionPulse * .7;
+    impactRing.scale.setScalar(1 + weighted * 1.4);
+    particles.rotation.y += delta * 3.2;
   } else if (simulation.phase === 'impact') {
-    pet.scale.set(1.42, .22, 1.42); pet.position.y = 3.24;
-    plate.position.y = 2.36; servoArm.rotation.z = -1.18;
-    impactRing.material.opacity = Math.sin(progress01 * Math.PI) * 1;
-    impactRing.scale.setScalar(1 + easeOut(progress01) * 1.6);
-    particles.rotation.y += delta * 3.4; particleMaterial.opacity = .85;
+    pet.scale.set(1.68, .16, 1.68); pet.position.y = 3.12;
+    plate.position.y = 2.18; servoArm.rotation.z = -1.35;
+    petMaterial.emissiveIntensity = 7 + Math.sin(simulation.elapsed * 22) * 2;
+    impactRing.material.opacity = .8 + Math.sin(simulation.elapsed * 18) * .2;
+    impactRing.scale.setScalar(2.4 + Math.sin(simulation.elapsed * 10) * .25);
+    particles.rotation.y += delta * 4.2; particleMaterial.opacity = .95;
   } else if (simulation.phase === 'lift') {
-    plate.position.y = lerp(2.36, 3.18, easeOut(progress01));
-    servoArm.rotation.z = lerp(-1.18, -.2, easeOut(progress01));
-    pet.position.y = 3.24; pet.scale.set(1.42, .22, 1.42); particleMaterial.opacity = .45 * (1 - progress01);
+    plate.position.y = lerp(2.18, 3.18, easeOut(progress01));
+    servoArm.rotation.z = lerp(-1.35, -.2, easeOut(progress01));
+    pet.position.y = 3.12; pet.scale.set(1.68, .16, 1.68); particleMaterial.opacity = .6 * (1 - progress01);
   } else if (simulation.phase === 'transfer') {
-    pet.position.y = lerp(3.24, .94, easeInOut(progress01));
-    pet.scale.set(lerp(1.42, .64, smooth), lerp(.22, .34, smooth), lerp(1.42, .64, smooth));
+    pet.position.y = lerp(3.12, .94, easeInOut(progress01));
+    pet.scale.set(lerp(1.68, .64, smooth), lerp(.16, .34, smooth), lerp(1.68, .64, smooth));
     particleMaterial.opacity = .28 * (1 - progress01);
   } else if (simulation.phase === 'points') {
     particleMaterial.opacity = 1 - progress01;
     points.textContent = (simulation.points + 25).toLocaleString('en-US');
+    const rewardPulse = Math.sin(progress01 * Math.PI);
+    points.style.color = '#b8ff5c';
+    points.style.textShadow = `0 0 ${12 + rewardPulse * 18}px rgba(184,255,92,.95)`;
+    points.style.transform = `scale(${1 + rewardPulse * .12})`;
+    uiPanel.style.boxShadow = `0 18px 50px rgba(0,0,0,.3), 0 0 ${18 + rewardPulse * 28}px rgba(184,255,92,.45)`;
+    impactRing.material.color.setHex(0xb8ff5c);
+    impactRing.material.opacity = rewardPulse * .9;
+    impactRing.scale.setScalar(1.2 + rewardPulse * 1.8);
   } else if (simulation.phase === 'return') {
     const settle = easeOut(progress01);
     pet.position.y = lerp(.94, .88, settle); pet.scale.set(.64, .34, .64);
