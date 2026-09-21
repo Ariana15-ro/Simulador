@@ -122,15 +122,20 @@ const labelObjects = labelData.map(([text,pos,color,desc]) => label(text,pos,col
 
 const pet = new THREE.Group(); machine.add(pet);
 pet.position.set(0, 4.36, 0);
-const petMaterial = new THREE.MeshStandardMaterial({ color: 0x42e7ff, emissive: 0x087d9d, emissiveIntensity: 1.8, transparent: true, opacity: .9, roughness: .16, metalness: .12 });
-const petGlowMaterial = new THREE.LineBasicMaterial({ color: 0xb8fbff, transparent: true, opacity: .95 });
+const petMaterial = new THREE.MeshStandardMaterial({ color: 0x58efff, emissive: 0x00aeca, emissiveIntensity: 2.8, transparent: true, opacity: .98, roughness: .16, metalness: .12 });
+const petGlowMaterial = new THREE.LineBasicMaterial({ color: 0xe0fdff, transparent: true, opacity: 1 });
+const petWireMaterial = new THREE.MeshBasicMaterial({ color: 0x8af4ff, transparent: true, opacity: .3, wireframe: true, depthWrite: false });
 const petBody = new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,1.15,32), petMaterial); petBody.position.y=.58; pet.add(petBody);
 const petBodyGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petBody.geometry), petGlowMaterial); petBodyGlow.position.copy(petBody.position); petBodyGlow.scale.setScalar(1.025); pet.add(petBodyGlow);
+const petBodyWire = new THREE.Mesh(petBody.geometry, petWireMaterial); petBodyWire.position.copy(petBody.position); petBodyWire.scale.setScalar(1.012); pet.add(petBodyWire);
 const petShoulder = new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.22,32), petMaterial); petShoulder.position.y=1.22; pet.add(petShoulder);
 const petShoulderGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petShoulder.geometry), petGlowMaterial); petShoulderGlow.position.copy(petShoulder.position); petShoulderGlow.scale.setScalar(1.03); pet.add(petShoulderGlow);
+const petShoulderWire = new THREE.Mesh(petShoulder.geometry, petWireMaterial); petShoulderWire.position.copy(petShoulder.position); petShoulderWire.scale.setScalar(1.015); pet.add(petShoulderWire);
 const petNeck = new THREE.Mesh(new THREE.CylinderGeometry(.14,.19,.35,32), petMaterial); petNeck.position.y=1.45; pet.add(petNeck);
 const petNeckGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petNeck.geometry), petGlowMaterial); petNeckGlow.position.copy(petNeck.position); petNeckGlow.scale.setScalar(1.03); pet.add(petNeckGlow);
+const petNeckWire = new THREE.Mesh(petNeck.geometry, petWireMaterial); petNeckWire.position.copy(petNeck.position); petNeckWire.scale.setScalar(1.015); pet.add(petNeckWire);
 const petCap = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.1,24), new THREE.MeshStandardMaterial({ color: 0xb8fbff, emissive: 0x55e9ff, emissiveIntensity: 2.5 })); petCap.position.y = 1.68; pet.add(petCap);
+const petLight = new THREE.PointLight(0x22dfff, 2.8, 3.2); petLight.position.set(0, .8, .65); pet.add(petLight);
 pet.visible=false;
 
 const particlePositions = new Float32Array(36 * 3);
@@ -204,7 +209,9 @@ function startSimulation() {
   pet.scale.set(1, 1, 1);
   petMaterial.color.setHex(0x42e7ff);
   petGlowMaterial.color.setHex(0xb8fbff);
-  petMaterial.emissiveIntensity = 1.8;
+  petMaterial.emissiveIntensity = 2.8;
+  petWireMaterial.opacity = .3;
+  petLight.intensity = 2.8;
   particles.position.y = 0;
   beginPhase('insert');
 }
@@ -214,6 +221,9 @@ function finishSimulation() {
   pet.visible = false;
   pet.position.y = 4.36;
   pet.scale.set(1, 1, 1);
+  petMaterial.emissiveIntensity = 2.8;
+  petWireMaterial.opacity = .3;
+  petLight.intensity = 2.8;
   plate.position.y = 3.18;
   servoArm.rotation.z = -.2;
   particleMaterial.opacity = 0;
@@ -262,28 +272,33 @@ function updateSimulation(delta) {
     const weighted = easeInOut(progress01);
     plate.position.y = lerp(3.18, 2.18, weighted);
     servoArm.rotation.z = lerp(-.2, -1.35, easeOut(progress01));
-    pet.position.y = lerp(3.42, 3.12, weighted);
-    pet.scale.set(lerp(1, 1.68, weighted), lerp(1, .16, weighted), lerp(1, 1.68, weighted));
-    petMaterial.emissiveIntensity = 2.5 + weighted * 5;
+    pet.position.y = lerp(3.42, 2.82, weighted);
+    pet.scale.set(lerp(1, 1.8, weighted), lerp(1, .18, weighted), lerp(1, 1.8, weighted));
+    petMaterial.emissiveIntensity = 2.5 + weighted * 7;
+    petLight.intensity = 3.5 + weighted * 8;
+    petWireMaterial.opacity = .42 + weighted * .28;
     const compressionPulse = Math.sin(progress01 * Math.PI);
-    particleMaterial.opacity = compressionPulse * 1.25;
-    impactRing.material.opacity = compressionPulse * .7;
-    impactRing.scale.setScalar(1 + weighted * 1.4);
+    particleMaterial.opacity = compressionPulse * 1.5;
+    impactRing.material.opacity = compressionPulse * .95;
+    impactRing.scale.setScalar(1 + weighted * 1.8);
     particles.rotation.y += delta * 3.2;
   } else if (simulation.phase === 'impact') {
-    pet.scale.set(1.68, .16, 1.68); pet.position.y = 3.12;
+    pet.scale.set(1.8, .18, 1.8); pet.position.y = 2.82;
     plate.position.y = 2.18; servoArm.rotation.z = -1.35;
     petMaterial.emissiveIntensity = 7 + Math.sin(simulation.elapsed * 22) * 2;
+    petLight.intensity = 11 + Math.sin(simulation.elapsed * 18) * 3;
+    petWireMaterial.opacity = .8;
     impactRing.material.opacity = .8 + Math.sin(simulation.elapsed * 18) * .2;
-    impactRing.scale.setScalar(2.4 + Math.sin(simulation.elapsed * 10) * .25);
-    particles.rotation.y += delta * 4.2; particleMaterial.opacity = .95;
+    impactRing.scale.setScalar(2.8 + Math.sin(simulation.elapsed * 10) * .3);
+    particles.rotation.y += delta * 4.2; particleMaterial.opacity = 1;
   } else if (simulation.phase === 'lift') {
     plate.position.y = lerp(2.18, 3.18, easeOut(progress01));
     servoArm.rotation.z = lerp(-1.35, -.2, easeOut(progress01));
-    pet.position.y = 3.12; pet.scale.set(1.68, .16, 1.68); particleMaterial.opacity = .6 * (1 - progress01);
+    pet.position.y = 2.82; pet.scale.set(1.8, .18, 1.8); particleMaterial.opacity = .7 * (1 - progress01);
+    petLight.intensity = 6 * (1 - progress01) + 2.8;
   } else if (simulation.phase === 'transfer') {
-    pet.position.y = lerp(3.12, .94, easeInOut(progress01));
-    pet.scale.set(lerp(1.68, .64, smooth), lerp(.16, .34, smooth), lerp(1.68, .64, smooth));
+    pet.position.y = lerp(2.82, .94, easeInOut(progress01));
+    pet.scale.set(lerp(1.8, .64, smooth), lerp(.18, .34, smooth), lerp(1.8, .64, smooth));
     particleMaterial.opacity = .28 * (1 - progress01);
   } else if (simulation.phase === 'points') {
     particleMaterial.opacity = 1 - progress01;
