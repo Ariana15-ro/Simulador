@@ -1,0 +1,36 @@
+x<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PETFlow Compact - Simulador 3D</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="loading" aria-hidden="true"><div class="loading-kicker">PETFLOW / SYSTEM 01</div><div class="loading-text">Inicializando estación</div><div class="loading-bar"><div class="loading-progress"></div></div></div>
+    <main class="app-shell">
+        <header class="topbar"><div class="brand-lockup"><span class="brand-mark">PF</span><div><div class="brand-name">PET<span>Flow</span> Compact</div><div class="brand-meta">Estación inteligente de recuperación PET</div></div></div><div class="topbar-meta"><span class="live-dot"></span> SIMULACIÓN EN VIVO <span class="divider"></span> 01 / 01</div></header>
+        <aside id="ui-panel" class="ui-panel">
+            <div class="eyebrow">CONTROL DE OPERACIÓN <span>●</span></div>
+            <div class="status-section"><div class="status-leds"><span class="led led-idle" id="led-idle"></span><span class="led led-active" id="led-active"></span><span class="led led-error" id="led-error"></span></div><div class="status-info"><div class="status-label">Estado del sistema</div><div class="status-value" id="status-text">ESPERANDO USUARIO</div><div class="phase-detail" id="phase-detail">Cámara activa · acércate para comenzar</div></div></div>
+            <div class="user-row"><div class="user-avatar">AM</div><div><div class="status-label" id="user-state">Perfil preparado</div><strong id="user-name">Alex Morgan</strong></div><span class="verified" id="user-badge">EN ESPERA</span></div>
+            <div class="stats-grid"><div class="stat-card"><span>Puntos acumulados</span><strong id="points">1,240</strong><small>+25 por botella</small></div><div class="stat-card"><span>Botellas hoy</span><strong id="counter">003</strong><small>Meta diaria 10</small></div></div><div class="progress-track"><span id="daily-progress"></span></div>
+            <div class="controls-section"><button class="btn btn-primary" id="insert-btn"><span class="button-icon">＋</span> Insertar botella PET</button><button class="btn btn-secondary" id="explode-btn"><span class="button-icon">◈</span> Mostrar etiquetas</button></div>
+            <div class="component-info" id="component-info" aria-live="polite"><div class="component-name" id="comp-name">Mapa de componentes</div><div class="component-desc" id="comp-desc">Activa las etiquetas para explorar cada módulo de la estación.</div><div class="component-material" id="comp-material">Órbita: arrastra · Zoom: rueda · Pan: botón derecho</div></div>
+            <div class="system-foot"><span>ALTURA MÁX.</span><strong>100 cm</strong><span class="foot-status">● ONLINE</span></div>
+        </aside>
+        <div class="scene-hint"><span class="crosshair">＋</span><span>ARRASTRA PARA ORBITAR<br><b>RUEDA PARA ACERCAR</b></span></div><div id="canvas-container"></div><div class="scene-caption"><span class="caption-line"></span><div><strong>PF / COMPACT CHAMBER</strong><small>Vista técnica · escala 1:1</small></div></div>
+    </main>
+
+    <!-- Three.js y controles -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
