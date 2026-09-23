@@ -340,9 +340,11 @@ button { font: inherit; }
 @media (max-width:700px) { .topbar { padding:0 18px; height:62px; }.brand-meta,.topbar-meta,.scene-caption,.scene-hint { display:none; } #ui-panel { top:auto; bottom:14px; left:14px; width:calc(100% - 28px); padding:16px; }.component-info { display:none; }.eyebrow { margin-bottom:12px; }.stats-grid { gap:6px; }.stat-card { padding:9px; }.stat-card strong { font-size:1.2rem; }.controls-section { display:grid; grid-template-columns:1fr 1fr; }.btn { font-size:.6rem; padding:10px 8px; }.system-foot { margin-top:10px; }.brand-name { font-size:.9rem; } }
 .hidden { display: none !important; opacity: 0; pointer-events: none; }
 .labels-layer { position: absolute !important; inset: 0; z-index: 4; pointer-events: none; overflow: visible; }
-.component-label { min-width: 168px; padding: 8px 10px; border: 1px solid rgba(24,191,255,.55); border-left: 3px solid var(--cyan); background: rgba(0, 8, 14, .94); color: #f0fcff; font-size: 10px; font-weight: 600; letter-spacing: .08em; line-height: 1.35; box-shadow: 0 0 10px rgba(24,191,255,.32), inset 0 0 12px rgba(24,191,255,.08); text-shadow: 0 0 7px rgba(138,244,255,.72); transform: translateY(-50%); white-space: nowrap; }
-.component-label::before { content: ''; position: absolute; width: 28px; border-top: 1px solid currentColor; left: -30px; top: 50%; opacity: .7; }
-.component-label b { display: block; font-weight: 700; }.component-label span { display: block; color: #a8dce7; font-size: 9px; margin-top: 3px; letter-spacing: .02em; text-shadow: none; }.component-label.mint { border-color: #55e9ff; color: #9df5ff; }
+.component-label { width: 146px; min-width: 146px; padding: 6px 8px; border: 1px solid rgba(24,191,255,.55); border-left: 2px solid var(--cyan); background: rgba(0, 8, 14, .94); color: #f0fcff; font-size: 9px; font-weight: 600; letter-spacing: .065em; line-height: 1.25; box-shadow: 0 0 8px rgba(24,191,255,.28), inset 0 0 10px rgba(24,191,255,.08); text-shadow: 0 0 6px rgba(138,244,255,.72); transform: translateY(-50%); white-space: normal; }
+.component-label::before { content: ''; position: absolute; width: 22px; border-top: 1px solid currentColor; left: -24px; top: 50%; opacity: .7; }
+.component-label.label-left { border-left: 1px solid rgba(24,191,255,.55); border-right: 2px solid var(--cyan); text-align: right; }
+.component-label.label-left::before { left: auto; right: -24px; }
+.component-label b { display: block; font-weight: 700; }.component-label span { display: block; color: #a8dce7; font-size: 8px; margin-top: 2px; letter-spacing: .015em; text-shadow: none; }.component-label.mint { border-color: #55e9ff; color: #9df5ff; }
 
 /* ===== Responsiveness ===== */
 @media (max-width: 768px) {

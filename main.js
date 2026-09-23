@@ -109,7 +109,8 @@ function box(name, size, position, material = darkMat, parent = machine) {
 }
 function lineBox(name, size, position, material = woodMat) { return box(name, size, position, material); }
 function label(text, position, color = 'cyan', description = '') {
-  const el = document.createElement('div'); el.className = `component-label ${color}`; el.innerHTML = `<b>${text}</b><span>${description}</span>`;
+  const side = position[0] < 0 ? 'label-left' : 'label-right';
+  const el = document.createElement('div'); el.className = `component-label ${color} ${side}`; el.innerHTML = `<b>${text}</b><span>${description}</span>`;
   const obj = new CSS2DObject(el); obj.position.set(...position); obj.userData = { text, description }; machine.add(obj); return obj;
 }
 
@@ -151,18 +152,18 @@ for (let i=0;i<3;i++) { const led = new THREE.Mesh(new THREE.SphereGeometry(.045
 const buzzer = new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.08,20), darkMat); buzzer.rotation.x=Math.PI/2; buzzer.position.set(1.15,1.44,.89); machine.add(buzzer);
 
 const labelData = [
-  ['TOLVA / ENTRADA',[1.42,4.92,0], 'cyan','Recepción de botella PET'],
-  ['SENSOR IR SUPERIOR',[1.42,4.35,.72], 'mint','Detecta la inserción'],
-  ['ESQUELETO DE MADERA',[1.42,3.78,.25], 'mint','Listones internos de refuerzo'],
-  ['CÁMARA FACIAL',[1.42,3.21,.58], 'mint','Reconocimiento simulado'],
-  ['ESTRUCTURA DE CARTÓN',[1.42,2.64,0], 'cyan','Panel PET reciclado · acabado negro mate'],
-  ['PLATO DE COMPACTACIÓN',[1.42,2.07,0], 'cyan','Carrera vertical servo'],
-  ['SERVO SG90',[2.55,4.62,.15], 'mint','Actuador de 180°'],
-  ['SENSOR IR COMPACTACIÓN',[2.55,4.05,.8], 'mint','Confirma zona despejada'],
-  ['LEDs DE ESTADO',[2.55,3.48,.85], 'mint','Listo · proceso · alerta'],
-  ['LCD 16×2',[2.55,2.91,.8], 'cyan','Estado · puntos · usuario'],
-  ['BUZZER',[2.55,2.34,.88], 'cyan','Confirmación sonora'],
-  ['CONTENEDOR INFERIOR',[2.55,1.77,0], 'cyan','Material compactado']
+  ['TOLVA / ENTRADA',[1.58,4.92,.2], 'cyan','Recepción de botella PET'],
+  ['SENSOR IR SUPERIOR',[1.58,4.34,.9], 'mint','Detecta la inserción'],
+  ['ESQUELETO DE MADERA',[-1.58,3.82,.25], 'mint','Listones internos de refuerzo'],
+  ['CÁMARA FACIAL',[-1.58,3.24,.58], 'mint','Reconocimiento simulado'],
+  ['ESTRUCTURA DE CARTÓN',[-1.58,2.68,-.2], 'cyan','Panel PET reciclado · acabado negro mate'],
+  ['PLATO DE COMPACTACIÓN',[1.58,2.18,.1], 'cyan','Carrera vertical servo'],
+  ['SERVO SG90',[2.72,4.62,.15], 'mint','Actuador de 180°'],
+  ['SENSOR IR COMPACTACIÓN',[2.72,4.0,.8], 'mint','Confirma zona despejada'],
+  ['LEDs DE ESTADO',[-2.72,3.42,.85], 'mint','Listo · proceso · alerta'],
+  ['LCD 16×2',[2.72,2.82,.8], 'cyan','Estado · puntos · usuario'],
+  ['BUZZER',[-2.72,2.28,.88], 'cyan','Confirmación sonora'],
+  ['CONTENEDOR INFERIOR',[2.72,1.58,0], 'cyan','Material compactado']
 ];
 const labelObjects = labelData.map(([text,pos,color,desc]) => label(text,pos,color,desc));
 
