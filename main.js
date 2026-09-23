@@ -21,7 +21,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.65, .72, .08));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 3.15, .94, .018);
+composer.addPass(bloomPass);
 const labels = new CSS2DRenderer();
 labels.setSize(innerWidth, innerHeight);
 labels.domElement.className = 'labels-layer';
@@ -34,10 +35,15 @@ controls.minDistance = 4.5;
 controls.maxDistance = 12;
 controls.maxPolarAngle = Math.PI * 0.54;
 
-scene.add(new THREE.HemisphereLight(0x164d72, 0x000000, 1.1));
-const key = new THREE.DirectionalLight(0x39cfff, 2.2);
+scene.add(new THREE.HemisphereLight(0x126b9c, 0x000000, 1.7));
+const key = new THREE.DirectionalLight(0x4edfff, 4.6);
 key.position.set(4, 8, 5); key.castShadow = true; scene.add(key);
-const rim = new THREE.PointLight(0x008cff, 12, 12); rim.position.set(-4, 4, -3); scene.add(rim);
+const rim = new THREE.PointLight(0x008cff, 32, 16); rim.position.set(-4, 4, -3); scene.add(rim);
+const fill = new THREE.PointLight(0x18d9ff, 22, 12); fill.position.set(3, 2.2, 4); scene.add(fill);
+const topLight = new THREE.SpotLight(0x70f5ff, 42, 16, Math.PI * .22, .55, 1.4);
+topLight.position.set(-1.5, 8, 3.5); topLight.target.position.set(0, 2, 0); scene.add(topLight, topLight.target);
+const underLight = new THREE.PointLight(0x00d9ff, 18, 5);
+underLight.position.set(0, .25, 0); scene.add(underLight);
 
 const cyan = 0x18bfff, mint = 0x55e9ff, charcoal = 0x03131d, wood = 0x087ca9;
 const shellMat = new THREE.MeshBasicMaterial({ color: 0x00131d, transparent: true, opacity: .04, side: THREE.DoubleSide });
@@ -49,6 +55,46 @@ const crispEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: tru
 const softEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: true, opacity: .2 });
 const machine = new THREE.Group();
 scene.add(machine);
+
+const energyPlatform = new THREE.Group();
+machine.add(energyPlatform);
+const platformDisc = new THREE.Mesh(
+  new THREE.CylinderGeometry(2.25, 2.25, .045, 96),
+  new THREE.MeshBasicMaterial({ color: 0x063449, transparent: true, opacity: .22 })
+);
+platformDisc.position.y = .055;
+energyPlatform.add(platformDisc);
+const platformRing = new THREE.Mesh(
+  new THREE.TorusGeometry(2.12, .045, 12, 96),
+  new THREE.MeshBasicMaterial({ color: 0x35eaff, transparent: true, opacity: .9, blending: THREE.AdditiveBlending })
+);
+platformRing.rotation.x = Math.PI / 2;
+platformRing.position.y = .1;
+energyPlatform.add(platformRing);
+const platformRingInner = new THREE.Mesh(
+  new THREE.TorusGeometry(1.68, .018, 8, 96),
+  new THREE.MeshBasicMaterial({ color: 0x8af4ff, transparent: true, opacity: .58, blending: THREE.AdditiveBlending })
+);
+platformRingInner.rotation.x = Math.PI / 2;
+platformRingInner.position.y = .11;
+energyPlatform.add(platformRingInner);
+const platformHalo = new THREE.Mesh(
+  new THREE.TorusGeometry(1.22, .012, 8, 96),
+  new THREE.MeshBasicMaterial({ color: 0x4deeff, transparent: true, opacity: .46, blending: THREE.AdditiveBlending })
+);
+platformHalo.rotation.x = Math.PI / 2;
+platformHalo.position.y = .125;
+energyPlatform.add(platformHalo);
+const platformSweep = new THREE.Mesh(
+  new THREE.RingGeometry(.48, 1.92, 96),
+  new THREE.MeshBasicMaterial({ color: 0x008fbd, transparent: true, opacity: .08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
+);
+platformSweep.rotation.x = -Math.PI / 2;
+platformSweep.position.y = .13;
+energyPlatform.add(platformSweep);
+const platformLight = new THREE.PointLight(0x00cfff, 8, 6);
+platformLight.position.y = .35;
+energyPlatform.add(platformLight);
 
 function addGlowEdges(mesh, color = cyan) {
   const crisp = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), crispEdgeMat.clone());
@@ -138,7 +184,7 @@ const petCap = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.1,24), new THR
 const petLight = new THREE.PointLight(0x22dfff, 2.8, 3.2); petLight.position.set(0, .8, .65); pet.add(petLight);
 pet.visible=false;
 
-const particlePositions = new Float32Array(36 * 3);
+const particlePositions = new Float32Array(96 * 3);
 for (let i = 0; i < particlePositions.length; i += 3) { particlePositions[i] = (Math.random() - .5) * 1.5; particlePositions[i + 1] = 2.35 + Math.random() * .9; particlePositions[i + 2] = (Math.random() - .5) * 1.5; }
 const particleGeometry = new THREE.BufferGeometry(); particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
 const particleMaterial = new THREE.PointsMaterial({ color: cyan, size: .045, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
@@ -147,8 +193,38 @@ const impactRing = new THREE.Mesh(new THREE.TorusGeometry(.68, .025, 8, 40), new
 impactRing.rotation.x = Math.PI / 2;
 impactRing.position.set(0, 2.5, 0);
 machine.add(impactRing);
+const impactFlash = new THREE.Mesh(
+  new THREE.RingGeometry(.12, .72, 64),
+  new THREE.MeshBasicMaterial({ color: 0xb8fbff, transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
+);
+impactFlash.rotation.x = -Math.PI / 2;
+impactFlash.position.set(0, 2.48, 0);
+machine.add(impactFlash);
 
-const status = document.querySelector('#status-text'), insertBtn = document.querySelector('#insert-btn'), toggleBtn = document.querySelector('#explode-btn');
+// Transparent holographic surfaces test depth without writing it, so panels do
+// not hide the interior when the camera orbits to the opposite side.
+const externalParts = [panels, bottle, bottleWire];
+const internalParts = machine.children.filter(child => !externalParts.includes(child) && !labelObjects.includes(child));
+machine.traverse(object => {
+  if (object.material?.transparent) {
+    object.material.depthTest = true;
+    object.material.depthWrite = false;
+  }
+});
+externalParts.forEach(part => {
+  part.renderOrder = 2;
+  part.traverse(child => { child.renderOrder = 2; });
+});
+internalParts.forEach(part => {
+  part.renderOrder = 10;
+  part.traverse(child => { child.renderOrder = 10; });
+});
+[pet, particles, impactRing, impactFlash].forEach(effect => {
+  effect.renderOrder = 20;
+  effect.traverse(child => { child.renderOrder = 20; });
+});
+
+const status = document.querySelector('#status-text'), insertBtn = document.querySelector('#insert-btn'), toggleBtn = document.querySelector('#explode-btn'), viewBtn = document.querySelector('#view-btn');
 const counter = document.querySelector('#counter'), points = document.querySelector('#points'), progress = document.querySelector('#daily-progress');
 const phaseDetail = document.querySelector('#phase-detail'), userState = document.querySelector('#user-state'), userBadge = document.querySelector('#user-badge');
 const uiPanel = document.querySelector('#ui-panel');
@@ -156,6 +232,17 @@ const ledObjects = [...document.querySelectorAll('.status-leds .led')];
 const simulation = { phase: 'waiting', elapsed: 0, duration: 0, busy: false, userVerified: false, userExists: true, attempts: 0, processed: 3, points: 1240, validBottle: true };
 const phases = { face: 4.6, profile: 2.1, register: 2.2, verify: 2.5, insert: 3.4, topSensor: 2.4, validate: 3.6, descend: 2.6, zoneSensor: 2.3, compress: 5.4, impact: 2.4, lift: 2.5, transfer: 2.5, points: 2.8, return: 2.0, reject: 2.2 };
 let showLabels = false;
+let internalView = true;
+
+function setViewMode(showInternal) {
+  internalView = showInternal;
+  externalParts.forEach(part => { part.visible = !internalView; });
+  internalParts.forEach(part => { part.visible = internalView; });
+  labelObjects.forEach(item => { item.visible = internalView && showLabels; });
+  viewBtn.classList.toggle('active', internalView);
+  viewBtn.setAttribute('aria-pressed', String(internalView));
+  viewBtn.innerHTML = `<span class="button-icon">◉</span> ${internalView ? 'Vista Interna' : 'Vista Exterior'}`;
+}
 
 const clamp01 = value => Math.min(Math.max(value, 0), 1);
 const easeInOut = value => value < .5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
@@ -228,6 +315,7 @@ function finishSimulation() {
   servoArm.rotation.z = -.2;
   particleMaterial.opacity = 0;
   impactRing.material.opacity = 0;
+  impactFlash.material.opacity = 0;
   beginPhase('return');
 }
 function updateSimulation(delta) {
@@ -235,6 +323,19 @@ function updateSimulation(delta) {
   simulation.elapsed += Math.min(delta, .05);
   const progress01 = clamp01(simulation.elapsed / simulation.duration);
   const smooth = easeInOut(progress01);
+  const cinematicPhase = simulation.phase === 'face' || simulation.phase === 'validate' || simulation.phase === 'compress' || simulation.phase === 'impact' || simulation.phase === 'points';
+  const focusEnergy = simulation.phase === 'compress' || simulation.phase === 'impact' ? 1 : cinematicPhase ? .55 : .2;
+  platformRing.rotation.z += delta * (.35 + focusEnergy * 1.8);
+  platformRingInner.rotation.z -= delta * (.6 + focusEnergy * 2.4);
+  platformHalo.rotation.z += delta * (.8 + focusEnergy * 2.8);
+  platformSweep.rotation.z -= delta * (.18 + focusEnergy * .8);
+  platformRing.material.opacity = .62 + focusEnergy * .3 + Math.sin(simulation.elapsed * 8) * focusEnergy * .08;
+  platformRingInner.material.opacity = .38 + focusEnergy * .28;
+  platformHalo.material.opacity = .28 + focusEnergy * .32 + Math.sin(cinematicTime * 5) * .06;
+  platformSweep.material.opacity = .045 + focusEnergy * .09;
+  platformLight.intensity = 5 + focusEnergy * 14;
+  underLight.intensity = 10 + focusEnergy * 22;
+  bloomPass.strength = 2.45 + focusEnergy * 1.55;
   if (simulation.phase === 'face') {
     const scan = 1.12 + Math.sin(simulation.elapsed * 9) * .18;
     lens.scale.setScalar(scan); cameraUnit.scale.set(1.12, scan, 1.12);
@@ -281,6 +382,8 @@ function updateSimulation(delta) {
     particleMaterial.opacity = compressionPulse * 1.5;
     impactRing.material.opacity = compressionPulse * .95;
     impactRing.scale.setScalar(1 + weighted * 1.8);
+    impactFlash.material.opacity = compressionPulse * .28;
+    impactFlash.scale.setScalar(.72 + weighted * 1.25);
     particles.rotation.y += delta * 3.2;
   } else if (simulation.phase === 'impact') {
     pet.scale.set(1.8, .18, 1.8); pet.position.y = 2.82;
@@ -290,12 +393,15 @@ function updateSimulation(delta) {
     petWireMaterial.opacity = .8;
     impactRing.material.opacity = .8 + Math.sin(simulation.elapsed * 18) * .2;
     impactRing.scale.setScalar(2.8 + Math.sin(simulation.elapsed * 10) * .3);
+    impactFlash.material.opacity = .22 + Math.sin(simulation.elapsed * 16) * .08;
+    impactFlash.scale.setScalar(1.8 + Math.sin(simulation.elapsed * 8) * .18);
     particles.rotation.y += delta * 4.2; particleMaterial.opacity = 1;
   } else if (simulation.phase === 'lift') {
     plate.position.y = lerp(2.18, 3.18, easeOut(progress01));
     servoArm.rotation.z = lerp(-1.35, -.2, easeOut(progress01));
     pet.position.y = 2.82; pet.scale.set(1.8, .18, 1.8); particleMaterial.opacity = .7 * (1 - progress01);
     petLight.intensity = 6 * (1 - progress01) + 2.8;
+    impactFlash.material.opacity = .22 * (1 - progress01);
   } else if (simulation.phase === 'transfer') {
     pet.position.y = lerp(2.82, .94, easeInOut(progress01));
     pet.scale.set(lerp(1.8, .64, smooth), lerp(.18, .34, smooth), lerp(1.8, .64, smooth));
@@ -335,22 +441,37 @@ toggleBtn.addEventListener('click', () => {
   toggleBtn.setAttribute('aria-pressed', String(showLabels));
   toggleBtn.innerHTML = `<span class="button-icon">◈</span> ${showLabels ? 'Ocultar etiquetas' : 'Mostrar etiquetas'}`;
 });
+viewBtn.addEventListener('click', () => setViewMode(!internalView));
 labelObjects.forEach(item => { item.visible = false; });
 toggleBtn.setAttribute('aria-pressed', 'false');
 toggleBtn.innerHTML = '<span class="button-icon">◈</span> Mostrar etiquetas';
+setViewMode(true);
 insertBtn.disabled = true;
 setStatus('ESPERANDO USUARIO',false,'Cámara activa · acércate para comenzar');
 setTimeout(startUserRecognition, 1600);
 
 const clock = new THREE.Clock();
+const cameraOffset = new THREE.Vector3();
+const previousCameraOffset = new THREE.Vector3();
+let cinematicTime = 0;
 function resize() { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); labels.setSize(innerWidth,innerHeight); }
 addEventListener('resize',resize);
 function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
+  cinematicTime += delta;
+  camera.position.sub(previousCameraOffset);
   updateSimulation(delta);
   machine.rotation.y += delta * .09;
   controls.update();
+  const importantPhase = simulation.phase === 'face' || simulation.phase === 'validate' || simulation.phase === 'compress' || simulation.phase === 'impact' || simulation.phase === 'points';
+  const cameraWeight = simulation.busy && importantPhase ? (simulation.phase === 'compress' || simulation.phase === 'impact' ? 1 : .45) : 0;
+  const cameraPulse = Math.sin(cinematicTime * 2.2) * .026 * cameraWeight;
+  const cameraVertical = Math.sin(cinematicTime * 1.7) * .018 * cameraWeight;
+  const cameraDepth = Math.cos(cinematicTime * 1.35) * .014 * cameraWeight;
+  cameraOffset.set(cameraPulse, cameraVertical, cameraDepth);
+  camera.position.add(cameraOffset);
+  previousCameraOffset.copy(cameraOffset);
   composer.render();
   labels.render(scene,camera);
 }
