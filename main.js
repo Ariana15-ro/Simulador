@@ -152,18 +152,18 @@ for (let i=0;i<3;i++) { const led = new THREE.Mesh(new THREE.SphereGeometry(.045
 const buzzer = new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.08,20), darkMat); buzzer.rotation.x=Math.PI/2; buzzer.position.set(1.15,1.44,.89); machine.add(buzzer);
 
 const labelData = [
-  ['TOLVA / ENTRADA',[1.58,4.92,.2], 'cyan','Recepción de botella PET'],
-  ['SENSOR IR SUPERIOR',[1.58,4.34,.9], 'mint','Detecta la inserción'],
-  ['ESQUELETO DE MADERA',[-1.58,3.82,.25], 'mint','Listones internos de refuerzo'],
-  ['CÁMARA FACIAL',[-1.58,3.24,.58], 'mint','Reconocimiento simulado'],
-  ['ESTRUCTURA DE CARTÓN',[-1.58,2.68,-.2], 'cyan','Panel PET reciclado · acabado negro mate'],
-  ['PLATO DE COMPACTACIÓN',[1.58,2.18,.1], 'cyan','Carrera vertical servo'],
-  ['SERVO SG90',[2.72,4.62,.15], 'mint','Actuador de 180°'],
-  ['SENSOR IR COMPACTACIÓN',[2.72,4.0,.8], 'mint','Confirma zona despejada'],
-  ['LEDs DE ESTADO',[-2.72,3.42,.85], 'mint','Listo · proceso · alerta'],
-  ['LCD 16×2',[2.72,2.82,.8], 'cyan','Estado · puntos · usuario'],
-  ['BUZZER',[-2.72,2.28,.88], 'cyan','Confirmación sonora'],
-  ['CONTENEDOR INFERIOR',[2.72,1.58,0], 'cyan','Material compactado']
+  ['TOLVA / ENTRADA',[1.9,5.3,.2], 'cyan','Recepción de botella PET'],
+  ['SENSOR IR SUPERIOR',[1.9,4.0,.9], 'mint','Detecta la inserción'],
+  ['ESQUELETO DE MADERA',[-1.9,4.9,.25], 'mint','Listones internos de refuerzo'],
+  ['CÁMARA FACIAL',[-1.9,3.2,.58], 'mint','Reconocimiento simulado'],
+  ['ESTRUCTURA DE CARTÓN',[-1.9,2.35,-.2], 'cyan','Panel PET reciclado · acabado negro mate'],
+  ['PLATO DE COMPACTACIÓN',[1.9,2.7,.1], 'cyan','Carrera vertical servo'],
+  ['SERVO SG90',[3.05,4.65,.15], 'mint','Actuador de 180°'],
+  ['SENSOR IR COMPACTACIÓN',[3.05,3.35,.8], 'mint','Confirma zona despejada'],
+  ['LEDs DE ESTADO',[-3.05,4.05,.85], 'mint','Listo · proceso · alerta'],
+  ['LCD 16×2',[3.05,2.05,.8], 'cyan','Estado · puntos · usuario'],
+  ['BUZZER',[-3.05,1.45,.88], 'cyan','Confirmación sonora'],
+  ['CONTENEDOR INFERIOR',[3.05,1.4,0], 'cyan','Material compactado']
 ];
 const labelObjects = labelData.map(([text,pos,color,desc]) => label(text,pos,color,desc));
 
@@ -233,7 +233,7 @@ const ledObjects = [...document.querySelectorAll('.status-leds .led')];
 const simulation = { phase: 'waiting', elapsed: 0, duration: 0, busy: false, userVerified: false, userExists: true, attempts: 0, processed: 3, points: 1240, validBottle: true };
 const phases = { face: 4.6, profile: 2.1, register: 2.2, verify: 2.5, insert: 3.4, topSensor: 2.4, validate: 3.6, descend: 2.6, zoneSensor: 2.3, compress: 5.4, impact: 2.4, lift: 2.5, transfer: 2.5, points: 2.8, return: 2.0, reject: 2.2 };
 let showLabels = false;
-let internalView = true;
+let internalView = false;
 const cameraTransition = {
   active: false,
   mode: 'idle',
@@ -268,7 +268,6 @@ function setViewMode(showInternal) {
   cameraTransition.start.copy(camera.position);
   cameraTransition.end.copy(showInternal ? interiorCameraPosition : exteriorCameraPosition);
   controls.enabled = false;
-  if (!showInternal) applyViewVisibility(false);
 }
 
 const clamp01 = value => Math.min(Math.max(value, 0), 1);
@@ -475,7 +474,7 @@ viewBtn.addEventListener('click', () => setViewMode(!internalView));
 labelObjects.forEach(item => { item.visible = false; });
 toggleBtn.setAttribute('aria-pressed', 'false');
 toggleBtn.innerHTML = '<span class="button-icon">◈</span> Mostrar etiquetas';
-setViewMode(true);
+setViewMode(false);
 insertBtn.disabled = true;
 setStatus('ESPERANDO USUARIO',false,'Cámara activa · acércate para comenzar');
 setTimeout(startUserRecognition, 1600);
@@ -498,6 +497,7 @@ function updateCameraTransition(delta) {
   if (cameraTransition.mode === 'in' && progress >= .72 && !internalParts[0].visible) applyViewVisibility(true);
   if (progress >= 1) {
     camera.position.copy(cameraTransition.end);
+    if (cameraTransition.mode === 'out') applyViewVisibility(false);
     cameraTransition.active = false;
     controls.enabled = true;
     controls.target.lerp(new THREE.Vector3(0, 2.35, 0), .18);
@@ -510,7 +510,6 @@ function animate() {
   cinematicTime += delta;
   camera.position.sub(previousCameraOffset);
   updateSimulation(delta);
-  machine.rotation.y += delta * .06;
   updateCameraTransition(delta);
   if (!cameraTransition.active) controls.update();
   const importantPhase = simulation.phase === 'face' || simulation.phase === 'validate' || simulation.phase === 'compress' || simulation.phase === 'impact' || simulation.phase === 'points';
