@@ -7,21 +7,22 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 const container = document.querySelector('#canvas-container');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
-scene.fog = new THREE.FogExp2(0x000000, 0.018);
+scene.background = new THREE.Color(0x071114);
+scene.fog = new THREE.FogExp2(0x071114, 0.035);
 const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 0.1, 100);
 camera.position.set(5.6, 4.2, 7.6);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = true;
 container.appendChild(renderer.domElement);
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.35, .82, .06);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .38, .32, .72);
 composer.addPass(bloomPass);
 const labels = new CSS2DRenderer();
 labels.setSize(innerWidth, innerHeight);
@@ -35,64 +36,69 @@ controls.minDistance = 4.5;
 controls.maxDistance = 12;
 controls.maxPolarAngle = Math.PI * 0.54;
 
-scene.add(new THREE.HemisphereLight(0x126b9c, 0x000000, .8));
-const key = new THREE.DirectionalLight(0x4edfff, 1.8);
-key.position.set(4, 8, 5); key.castShadow = true; scene.add(key);
-const rim = new THREE.PointLight(0x008cff, 8, 14); rim.position.set(-4, 4, -3); scene.add(rim);
-const fill = new THREE.PointLight(0x18d9ff, 6, 10); fill.position.set(3, 2.2, 4); scene.add(fill);
-const topLight = new THREE.SpotLight(0x70f5ff, 10, 14, Math.PI * .22, .55, 1.4);
+scene.add(new THREE.HemisphereLight(0xd5eef0, 0x152327, 1.25));
+const key = new THREE.DirectionalLight(0xe8f4f2, 3.2);
+key.position.set(4, 8, 5); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); scene.add(key);
+const rim = new THREE.PointLight(0x2caabd, 3.2, 14); rim.position.set(-4, 4, -3); scene.add(rim);
+const fill = new THREE.PointLight(0x66d5dc, 2.4, 10); fill.position.set(3, 2.2, 4); scene.add(fill);
+const topLight = new THREE.SpotLight(0xb6f0ec, 6, 14, Math.PI * .22, .55, 1.4);
 topLight.position.set(-1.5, 8, 3.5); topLight.target.position.set(0, 2, 0); scene.add(topLight, topLight.target);
-const underLight = new THREE.PointLight(0x00d9ff, 5, 5);
+const underLight = new THREE.PointLight(0x16a5bd, 2.2, 5);
 underLight.position.set(0, .25, 0); scene.add(underLight);
 
-const cyan = 0x18bfff, mint = 0x55e9ff, charcoal = 0x03131d, wood = 0x087ca9;
-const shellMat = new THREE.MeshBasicMaterial({ color: 0x00131d, transparent: true, opacity: .04, side: THREE.DoubleSide });
-const edgeMat = new THREE.MeshBasicMaterial({ color: cyan, wireframe: true, transparent: true, opacity: .95 });
-const glowMat = new THREE.MeshBasicMaterial({ color: mint, transparent: true, opacity: .08, wireframe: true });
-const darkMat = new THREE.MeshBasicMaterial({ color: charcoal, transparent: true, opacity: .04, side: THREE.DoubleSide });
-const woodMat = new THREE.MeshBasicMaterial({ color: cyan, transparent: true, opacity: .12, wireframe: true });
-const crispEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: true, opacity: .95 });
-const softEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: true, opacity: .2 });
+const cyan = 0x55d4dc, mint = 0x9ce8dd, charcoal = 0x172327;
+const shellMat = new THREE.MeshPhysicalMaterial({ color: 0x152328, roughness: .3, metalness: .58, clearcoat: .62, clearcoatRoughness: .28 });
+const edgeMat = new THREE.MeshBasicMaterial({ color: 0x62d6dc, wireframe: true, transparent: true, opacity: .2 });
+const glowMat = new THREE.MeshStandardMaterial({ color: 0x27545a, emissive: 0x0e555b, emissiveIntensity: .24, roughness: .3, metalness: .58, transparent: true, opacity: .68 });
+const darkMat = new THREE.MeshPhysicalMaterial({ color: charcoal, roughness: .34, metalness: .62, clearcoat: .28, clearcoatRoughness: .4 });
+const woodMat = new THREE.MeshStandardMaterial({ color: 0x466568, emissive: 0x071b1d, emissiveIntensity: .22, roughness: .42, metalness: .32 });
+const crispEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: true, opacity: .48 });
+const softEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: true, opacity: .065 });
 const machine = new THREE.Group();
 scene.add(machine);
+const studioFloor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x091316, roughness: .78, metalness: .16 }));
+studioFloor.rotation.x = -Math.PI / 2;
+studioFloor.position.y = -.08;
+studioFloor.receiveShadow = true;
+scene.add(studioFloor);
 
 const energyPlatform = new THREE.Group();
 machine.add(energyPlatform);
 const platformDisc = new THREE.Mesh(
   new THREE.CylinderGeometry(2.25, 2.25, .045, 96),
-  new THREE.MeshBasicMaterial({ color: 0x063449, transparent: true, opacity: .22 })
+  new THREE.MeshStandardMaterial({ color: 0x122b31, roughness: .38, metalness: .58 })
 );
 platformDisc.position.y = .055;
 energyPlatform.add(platformDisc);
 const platformRing = new THREE.Mesh(
   new THREE.TorusGeometry(2.12, .045, 12, 96),
-  new THREE.MeshBasicMaterial({ color: 0x35eaff, transparent: true, opacity: .9, blending: THREE.AdditiveBlending })
+  new THREE.MeshBasicMaterial({ color: 0x4fcbd2, transparent: true, opacity: .58, blending: THREE.AdditiveBlending })
 );
 platformRing.rotation.x = Math.PI / 2;
 platformRing.position.y = .1;
 energyPlatform.add(platformRing);
 const platformRingInner = new THREE.Mesh(
   new THREE.TorusGeometry(1.68, .018, 8, 96),
-  new THREE.MeshBasicMaterial({ color: 0x8af4ff, transparent: true, opacity: .58, blending: THREE.AdditiveBlending })
+  new THREE.MeshBasicMaterial({ color: 0xa4eff0, transparent: true, opacity: .32, blending: THREE.AdditiveBlending })
 );
 platformRingInner.rotation.x = Math.PI / 2;
 platformRingInner.position.y = .11;
 energyPlatform.add(platformRingInner);
 const platformHalo = new THREE.Mesh(
   new THREE.TorusGeometry(1.22, .012, 8, 96),
-  new THREE.MeshBasicMaterial({ color: 0x4deeff, transparent: true, opacity: .46, blending: THREE.AdditiveBlending })
+  new THREE.MeshBasicMaterial({ color: 0x83e4e4, transparent: true, opacity: .24, blending: THREE.AdditiveBlending })
 );
 platformHalo.rotation.x = Math.PI / 2;
 platformHalo.position.y = .125;
 energyPlatform.add(platformHalo);
 const platformSweep = new THREE.Mesh(
   new THREE.RingGeometry(.48, 1.92, 96),
-  new THREE.MeshBasicMaterial({ color: 0x008fbd, transparent: true, opacity: .08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
+  new THREE.MeshBasicMaterial({ color: 0x16899a, transparent: true, opacity: .045, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
 );
 platformSweep.rotation.x = -Math.PI / 2;
 platformSweep.position.y = .13;
 energyPlatform.add(platformSweep);
-const platformLight = new THREE.PointLight(0x00cfff, 3, 6);
+const platformLight = new THREE.PointLight(0x27aeb9, 1.5, 6);
 platformLight.position.y = .35;
 energyPlatform.add(platformLight);
 
@@ -100,7 +106,7 @@ function addGlowEdges(mesh, color = cyan) {
   const crisp = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), crispEdgeMat.clone());
   crisp.material.color.setHex(color); crisp.position.set(0, 0, 0); mesh.add(crisp);
   const soft = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), softEdgeMat.clone());
-  soft.material.color.setHex(color); soft.material.opacity = .16; soft.scale.setScalar(1.012); mesh.add(soft);
+  soft.material.color.setHex(color); soft.material.opacity = .055; soft.scale.setScalar(1.012); mesh.add(soft);
 }
 
 function box(name, size, position, material = darkMat, parent = machine) {
@@ -117,15 +123,15 @@ function label(text, position, color = 'cyan', description = '') {
 // 100 cm PET-bottle silhouette: the outer carton follows the same profile.
 const profile = [[0.0,0.0],[0.94,0.0],[1.0,.18],[1.0,2.35],[.94,2.55],[.7,2.7],[.7,3.05],[.44,3.2],[.44,3.5],[.31,3.62],[.31,3.92],[.2,4.04],[0.0,4.04]];
 const lathePoints = profile.map(([r,y]) => new THREE.Vector2(r, y));
-const bottle = new THREE.Mesh(new THREE.LatheGeometry(lathePoints, 48), new THREE.MeshBasicMaterial({ color: 0x003b56, transparent: true, opacity: .035, side: THREE.DoubleSide }));
+const bottle = new THREE.Mesh(new THREE.LatheGeometry(lathePoints, 96), new THREE.MeshPhysicalMaterial({ color: 0x28616a, transparent: true, opacity: .12, roughness: .28, metalness: .18, clearcoat: .7, side: THREE.DoubleSide }));
 bottle.position.y = .34; bottle.castShadow = true; machine.add(bottle);
-const bottleWire = new THREE.Mesh(new THREE.LatheGeometry(lathePoints, 32), edgeMat); bottleWire.position.copy(bottle.position); bottleWire.material.opacity = .9; machine.add(bottleWire);
+const bottleWire = new THREE.Mesh(new THREE.LatheGeometry(lathePoints, 64), edgeMat); bottleWire.position.copy(bottle.position); bottleWire.material.opacity = .14; machine.add(bottleWire);
 
-// Carton panels with neon seams.
+// Solid graphite panels define the exterior; the internal view reveals the frame.
 const panels = new THREE.Group(); machine.add(panels);
 for (const [x,z,rot] of [[-1.05,0,0],[1.05,0,0],[0,-1.05,Math.PI / 2],[0,1.05,Math.PI / 2]]) {
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(2.15, 4.25, .12), shellMat); panel.position.set(x,2.47,z); panel.rotation.y = rot; panels.add(panel);
-  const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2.15,4.25,.12)), new THREE.LineBasicMaterial({ color: cyan, transparent:true, opacity:.7 })); outline.position.copy(panel.position); outline.rotation.copy(panel.rotation); panels.add(outline);
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(2.15, 4.25, .12), shellMat); panel.position.set(x,2.47,z); panel.rotation.y = rot; panel.castShadow = true; panel.receiveShadow = true; panels.add(panel);
+  const outline = new THREE.LineSegments(new THREE.EdgesGeometry(panel.geometry), new THREE.LineBasicMaterial({ color: 0x63cbd1, transparent:true, opacity:.3 })); outline.position.copy(panel.position); outline.rotation.copy(panel.rotation); panels.add(outline);
 }
 // Wooden internal skeleton.
 for (const x of [-.82,.82]) for (const z of [-.82,.82]) lineBox('wooden-skeleton', [.1,4.1,.1], [x,2.42,z]);
@@ -135,10 +141,16 @@ for (const y of [.48, 2.35, 4.38]) for (const x of [-.86,.86]) lineBox('wooden-c
 // Hopper, chamber, compactor and lower container.
 box('base', [2.1,.25,2.1], [0,.18,0], darkMat);
 const hopper = new THREE.Mesh(new THREE.CylinderGeometry(.75,1.12,.46,4), new THREE.MeshBasicMaterial({ color: 0x003b56, transparent:true, opacity:.04, side:THREE.DoubleSide })); hopper.position.set(0,4.34,0); hopper.rotation.y=Math.PI/4; machine.add(hopper); addGlowEdges(hopper);
-box('compaction-chamber', [1.65,1.05,1.65], [0,2.75,0], new THREE.MeshPhysicalMaterial({color:0x102324, transparent:true, opacity:.32, roughness:.2, side:THREE.DoubleSide}));
+box('compaction-chamber', [1.65,1.05,1.65], [0,2.75,0], new THREE.MeshPhysicalMaterial({color:0x1b3b3e, transparent:true, opacity:.2, roughness:.3, metalness:.22, side:THREE.DoubleSide}));
 const plate = box('compactor-plate', [1.32,.16,1.32], [0,3.18,0], glowMat);
-const containerBottom = box('lower-container', [1.7,.75,1.7], [0,.69,0], darkMat);
-for (let i=0;i<4;i++) { const corner = new THREE.Mesh(new THREE.BoxGeometry(.08,.8,.08), glowMat); corner.position.set(i%2 ? .83 : -.83, .72, i>1 ? .83 : -.83); machine.add(corner); }
+const lowerContainer = new THREE.Group(); machine.add(lowerContainer);
+const binWallMat = new THREE.MeshPhysicalMaterial({ color: 0x203337, transparent: true, opacity: .34, roughness: .32, metalness: .42, side: THREE.DoubleSide });
+box('lower-container-base', [1.62,.12,1.62], [0,.38,0], darkMat, lowerContainer);
+box('lower-container-front', [1.62,.66,.08], [0,.77,.77], binWallMat, lowerContainer);
+box('lower-container-back', [1.62,.66,.08], [0,.77,-.77], binWallMat, lowerContainer);
+box('lower-container-left', [.08,.66,1.46], [-.77,.77,0], binWallMat, lowerContainer);
+box('lower-container-right', [.08,.66,1.46], [.77,.77,0], binWallMat, lowerContainer);
+for (let i=0;i<4;i++) { const corner = new THREE.Mesh(new THREE.BoxGeometry(.055,.72,.055), glowMat); corner.position.set(i%2 ? .78 : -.78, .76, i>1 ? .78 : -.78); machine.add(corner); }
 // Servo SG90 on the side with a linkage.
 const servo = box('servo', [.42,.6,.3], [1.28,3.05,.15], new THREE.MeshStandardMaterial({color:0x29506a, roughness:.4, metalness:.25}));
 const servoArm = box('servo-arm', [.08,.75,.08], [1.28,3.52,.15], glowMat); servoArm.rotation.z = -.2;
@@ -169,20 +181,21 @@ const labelObjects = labelData.map(([text,pos,color,desc]) => label(text,pos,col
 
 const pet = new THREE.Group(); machine.add(pet);
 pet.position.set(0, 4.36, 0);
-const petMaterial = new THREE.MeshStandardMaterial({ color: 0x58efff, emissive: 0x00aeca, emissiveIntensity: 1.35, transparent: true, opacity: .98, roughness: .16, metalness: .12 });
-const petGlowMaterial = new THREE.LineBasicMaterial({ color: 0xe0fdff, transparent: true, opacity: 1 });
-const petWireMaterial = new THREE.MeshBasicMaterial({ color: 0x8af4ff, transparent: true, opacity: .3, wireframe: true, depthWrite: false });
-const petBody = new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,1.15,32), petMaterial); petBody.position.y=.58; pet.add(petBody);
-const petBodyGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petBody.geometry), petGlowMaterial); petBodyGlow.position.copy(petBody.position); petBodyGlow.scale.setScalar(1.025); pet.add(petBodyGlow);
-const petBodyWire = new THREE.Mesh(petBody.geometry, petWireMaterial); petBodyWire.position.copy(petBody.position); petBodyWire.scale.setScalar(1.012); pet.add(petBodyWire);
-const petShoulder = new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.22,32), petMaterial); petShoulder.position.y=1.22; pet.add(petShoulder);
+const petMaterial = new THREE.MeshPhysicalMaterial({ color: 0x50cbd2, emissive: 0x073b40, emissiveIntensity: .32, transparent: true, opacity: .78, roughness: .12, metalness: .04, clearcoat: 1, clearcoatRoughness: .1 });
+const petGlowMaterial = new THREE.LineBasicMaterial({ color: 0xbaf4ec, transparent: true, opacity: .38 });
+const petWireMaterial = new THREE.MeshBasicMaterial({ color: 0xa1e8e8, transparent: true, opacity: .045, wireframe: true, depthWrite: false });
+const petProfile = [[0,.02],[.23,.02],[.31,.055],[.34,.12],[.34,.19],[.316,.215],[.316,.245],[.34,.27],[.34,.33],[.316,.355],[.316,.385],[.34,.41],[.34,.47],[.316,.495],[.316,.525],[.34,.55],[.34,.61],[.316,.635],[.316,.665],[.34,.69],[.34,.76],[.33,.83],[.31,.9],[.28,.96],[.24,1.01],[.19,1.055],[.17,1.08],[0,1.08]].map(([radius,height]) => new THREE.Vector2(radius,height));
+const petBody = new THREE.Mesh(new THREE.LatheGeometry(petProfile, 64), petMaterial); pet.add(petBody);
+const petBodyGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petBody.geometry, 24), petGlowMaterial); pet.add(petBodyGlow);
+const petBodyWire = new THREE.Mesh(petBody.geometry, petWireMaterial); petBodyWire.scale.setScalar(1.008); pet.add(petBodyWire);
+const petShoulder = new THREE.Mesh(new THREE.CylinderGeometry(.22,.28,.22,48), petMaterial); petShoulder.position.y=1.16; pet.add(petShoulder);
 const petShoulderGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petShoulder.geometry), petGlowMaterial); petShoulderGlow.position.copy(petShoulder.position); petShoulderGlow.scale.setScalar(1.03); pet.add(petShoulderGlow);
 const petShoulderWire = new THREE.Mesh(petShoulder.geometry, petWireMaterial); petShoulderWire.position.copy(petShoulder.position); petShoulderWire.scale.setScalar(1.015); pet.add(petShoulderWire);
-const petNeck = new THREE.Mesh(new THREE.CylinderGeometry(.14,.19,.35,32), petMaterial); petNeck.position.y=1.45; pet.add(petNeck);
+const petNeck = new THREE.Mesh(new THREE.CylinderGeometry(.14,.18,.32,48), petMaterial); petNeck.position.y=1.41; pet.add(petNeck);
 const petNeckGlow = new THREE.LineSegments(new THREE.EdgesGeometry(petNeck.geometry), petGlowMaterial); petNeckGlow.position.copy(petNeck.position); petNeckGlow.scale.setScalar(1.03); pet.add(petNeckGlow);
 const petNeckWire = new THREE.Mesh(petNeck.geometry, petWireMaterial); petNeckWire.position.copy(petNeck.position); petNeckWire.scale.setScalar(1.015); pet.add(petNeckWire);
-const petCap = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.1,24), new THREE.MeshStandardMaterial({ color: 0xb8fbff, emissive: 0x55e9ff, emissiveIntensity: 2.5 })); petCap.position.y = 1.68; pet.add(petCap);
-const petLight = new THREE.PointLight(0x22dfff, 1.4, 3.2); petLight.position.set(0, .8, .65); pet.add(petLight);
+const petCap = new THREE.Mesh(new THREE.CylinderGeometry(.155,.155,.1,32), new THREE.MeshStandardMaterial({ color: 0x9de5df, emissive: 0x1a6765, emissiveIntensity: .45, roughness: .24, metalness: .22 })); petCap.position.y = 1.63; pet.add(petCap);
+const petLight = new THREE.PointLight(0x56d9da, .7, 2.6); petLight.position.set(0, .8, .55); pet.add(petLight);
 pet.visible=false;
 
 const particlePositions = new Float32Array(96 * 3);
@@ -280,12 +293,26 @@ const lerp = (from, to, amount) => from + (to - from) * amount;
 function setStatus(text, active=false, detail='') { status.textContent=text; phaseDetail.textContent=detail; document.querySelector('#led-idle').classList.toggle('on',!active); document.querySelector('#led-active').classList.toggle('on',active); document.querySelector('#led-error').classList.remove('on'); }
 function setComponentActive(component, active) {
   if (!component) return;
-  component.scale.setScalar(active ? 1.22 : 1);
-  if (component.material) {
-    component.material.color.setHex(active ? 0xb8fbff : mint);
-    component.material.opacity = active ? .98 : .12;
+  const materials = [component.material, ...component.children.map(child => child.material)].filter(Boolean);
+  if (!component.userData.idleScale) {
+    component.userData.idleScale = component.scale.clone();
+    component.userData.idleMaterials = materials.map(material => ({
+      color: material.color?.getHex(),
+      emissive: material.emissive?.getHex(),
+      emissiveIntensity: material.emissiveIntensity,
+      opacity: material.opacity
+    }));
   }
-  component.children.forEach(child => { if (child.material) { child.material.color.setHex(active ? 0x8af4ff : cyan); child.material.opacity = active ? 1 : .32; } });
+  component.scale.copy(component.userData.idleScale).multiplyScalar(active ? 1.08 : 1);
+  materials.forEach((material, index) => {
+    const idle = component.userData.idleMaterials[index];
+    if (idle.color !== undefined) material.color.setHex(active ? 0x6caeae : idle.color);
+    if (idle.emissive !== undefined) {
+      material.emissive.setHex(active ? 0x18595c : idle.emissive);
+      material.emissiveIntensity = active ? .52 : idle.emissiveIntensity;
+    }
+    if (idle.opacity !== undefined) material.opacity = active && index > 0 ? Math.max(idle.opacity, .68) : idle.opacity;
+  });
 }
 function beginPhase(name) {
   simulation.phase=name; simulation.elapsed=0; simulation.duration=phases[name];
@@ -323,11 +350,11 @@ function startSimulation() {
   pet.visible = true;
   pet.position.y = 4.36;
   pet.scale.set(1, 1, 1);
-  petMaterial.color.setHex(0x42e7ff);
-  petGlowMaterial.color.setHex(0xb8fbff);
-  petMaterial.emissiveIntensity = 1.35;
-  petWireMaterial.opacity = .3;
-  petLight.intensity = 1.4;
+  petMaterial.color.setHex(0x58cbd1);
+  petGlowMaterial.color.setHex(0xd2f4ef);
+  petMaterial.emissiveIntensity = .32;
+  petWireMaterial.opacity = .045;
+  petLight.intensity = .7;
   particles.position.y = 0;
   beginPhase('insert');
 }
@@ -337,9 +364,9 @@ function finishSimulation() {
   pet.visible = false;
   pet.position.y = 4.36;
   pet.scale.set(1, 1, 1);
-  petMaterial.emissiveIntensity = 1.35;
-  petWireMaterial.opacity = .3;
-  petLight.intensity = 1.4;
+  petMaterial.emissiveIntensity = .32;
+  petWireMaterial.opacity = .045;
+  petLight.intensity = .7;
   plate.position.y = 3.18;
   servoArm.rotation.z = -.2;
   particleMaterial.opacity = 0;
@@ -358,13 +385,13 @@ function updateSimulation(delta) {
   platformRingInner.rotation.z -= delta * (.6 + focusEnergy * 2.4);
   platformHalo.rotation.z += delta * (.8 + focusEnergy * 2.8);
   platformSweep.rotation.z -= delta * (.18 + focusEnergy * .8);
-  platformRing.material.opacity = .62 + focusEnergy * .3 + Math.sin(simulation.elapsed * 8) * focusEnergy * .08;
-  platformRingInner.material.opacity = .38 + focusEnergy * .28;
-  platformHalo.material.opacity = .28 + focusEnergy * .32 + Math.sin(cinematicTime * 5) * .06;
-  platformSweep.material.opacity = .045 + focusEnergy * .09;
-  platformLight.intensity = 2.5 + focusEnergy * 3.5;
-  underLight.intensity = 3.5 + focusEnergy * 5.5;
-  bloomPass.strength = 1.2 + focusEnergy * .35;
+  platformRing.material.opacity = .3 + focusEnergy * .24 + Math.sin(simulation.elapsed * 5) * focusEnergy * .035;
+  platformRingInner.material.opacity = .18 + focusEnergy * .12;
+  platformHalo.material.opacity = .12 + focusEnergy * .16 + Math.sin(cinematicTime * 3) * .025;
+  platformSweep.material.opacity = .025 + focusEnergy * .025;
+  platformLight.intensity = 1.4 + focusEnergy * 1.1;
+  underLight.intensity = 1.6 + focusEnergy * 1.5;
+  bloomPass.strength = .34 + focusEnergy * .12;
   if (simulation.phase === 'face') {
     const scan = 1.12 + Math.sin(simulation.elapsed * 9) * .18;
     lens.scale.setScalar(scan); cameraUnit.scale.set(1.12, scan, 1.12);
@@ -386,8 +413,8 @@ function updateSimulation(delta) {
     irTop.scale.setScalar(pulse); irZone.scale.setScalar(pulse);
     irTop.material.opacity = .8 + (Math.sin(simulation.elapsed * 20) + 1) * .1;
     irZone.material.opacity = .8 + (Math.sin(simulation.elapsed * 20 + Math.PI) + 1) * .1;
-    petMaterial.color.setHex(simulation.validBottle ? 0x42e7ff : 0xff527a);
-    petGlowMaterial.color.setHex(simulation.validBottle ? 0x8af4ff : 0xff527a);
+    petMaterial.color.setHex(simulation.validBottle ? 0x58cbd1 : 0xd96c7d);
+    petGlowMaterial.color.setHex(simulation.validBottle ? 0xd2f4ef : 0xf1a0aa);
   } else if (simulation.phase === 'reject') {
     pet.position.y = lerp(3.42, 4.36, easeInOut(progress01));
     pet.scale.set(lerp(1, .82, smooth), lerp(1, .82, smooth), lerp(1, .82, smooth));
@@ -400,40 +427,40 @@ function updateSimulation(delta) {
     irZone.scale.setScalar(pulse);
   } else if (simulation.phase === 'compress') {
     const weighted = easeInOut(progress01);
-    plate.position.y = lerp(3.18, 2.18, weighted);
-    servoArm.rotation.z = lerp(-.2, -1.35, easeOut(progress01));
+    plate.position.y = lerp(3.18, 2.68, weighted);
+    servoArm.rotation.z = lerp(-.2, -1.2, easeInOut(progress01));
     pet.position.y = lerp(3.42, 2.34, weighted);
-    pet.scale.set(lerp(1, 1.8, weighted), lerp(1, .18, weighted), lerp(1, 1.8, weighted));
-    petMaterial.emissiveIntensity = 1.4 + weighted * 2.6;
-    petLight.intensity = 1.8 + weighted * 2.7;
-    petWireMaterial.opacity = .42 + weighted * .28;
+    pet.scale.set(lerp(1, 1.68, weighted), lerp(1, .18, weighted), lerp(1, 1.68, weighted));
+    petMaterial.emissiveIntensity = .32 + weighted * .42;
+    petLight.intensity = .7 + weighted * .55;
+    petWireMaterial.opacity = .045 + weighted * .035;
     const compressionPulse = Math.sin(progress01 * Math.PI);
-    particleMaterial.opacity = compressionPulse * 1.5;
-    impactRing.material.opacity = compressionPulse * .95;
-    impactRing.scale.setScalar(1 + weighted * 1.8);
-    impactFlash.material.opacity = compressionPulse * .28;
-    impactFlash.scale.setScalar(.72 + weighted * 1.25);
+    particleMaterial.opacity = compressionPulse * .38;
+    impactRing.material.opacity = compressionPulse * .48;
+    impactRing.scale.setScalar(1 + weighted * 1.25);
+    impactFlash.material.opacity = compressionPulse * .1;
+    impactFlash.scale.setScalar(.72 + weighted * .8);
     particles.rotation.y += delta * 3.2;
   } else if (simulation.phase === 'impact') {
-    pet.scale.set(1.8, .18, 1.8); pet.position.y = 2.34;
-    plate.position.y = 2.18; servoArm.rotation.z = -1.35;
-    petMaterial.emissiveIntensity = 3.8 + Math.sin(simulation.elapsed * 22) * .7;
-    petLight.intensity = 4.2 + Math.sin(simulation.elapsed * 18) * .9;
-    petWireMaterial.opacity = .8;
-    impactRing.material.opacity = .8 + Math.sin(simulation.elapsed * 18) * .2;
-    impactRing.scale.setScalar(2.8 + Math.sin(simulation.elapsed * 10) * .3);
-    impactFlash.material.opacity = .22 + Math.sin(simulation.elapsed * 16) * .08;
-    impactFlash.scale.setScalar(1.8 + Math.sin(simulation.elapsed * 8) * .18);
+    pet.scale.set(1.68, .18, 1.68); pet.position.y = 2.34;
+    plate.position.y = 2.68; servoArm.rotation.z = -1.2;
+    petMaterial.emissiveIntensity = .74 + Math.sin(simulation.elapsed * 8) * .06;
+    petLight.intensity = 1.25 + Math.sin(simulation.elapsed * 7) * .1;
+    petWireMaterial.opacity = .08;
+    impactRing.material.opacity = .42 + Math.sin(simulation.elapsed * 7) * .06;
+    impactRing.scale.setScalar(2.15 + Math.sin(simulation.elapsed * 4) * .08);
+    impactFlash.material.opacity = .08 + Math.sin(simulation.elapsed * 6) * .025;
+    impactFlash.scale.setScalar(1.5 + Math.sin(simulation.elapsed * 4) * .08);
     particles.rotation.y += delta * 4.2; particleMaterial.opacity = 1;
   } else if (simulation.phase === 'lift') {
-    plate.position.y = lerp(2.18, 3.18, easeOut(progress01));
-    servoArm.rotation.z = lerp(-1.35, -.2, easeOut(progress01));
-    pet.position.y = 2.34; pet.scale.set(1.8, .18, 1.8); particleMaterial.opacity = .7 * (1 - progress01);
-    petLight.intensity = 2.8 * (1 - progress01) + 1.4;
-    impactFlash.material.opacity = .22 * (1 - progress01);
+    plate.position.y = lerp(2.68, 3.18, easeOut(progress01));
+    servoArm.rotation.z = lerp(-1.2, -.2, easeOut(progress01));
+    pet.position.y = 2.34; pet.scale.set(1.68, .18, 1.68); particleMaterial.opacity = .3 * (1 - progress01);
+    petLight.intensity = .7 + .55 * (1 - progress01);
+    impactFlash.material.opacity = .08 * (1 - progress01);
   } else if (simulation.phase === 'transfer') {
-    pet.position.y = lerp(2.34, .5, easeInOut(progress01));
-    pet.scale.set(lerp(1.8, .64, smooth), lerp(.18, .34, smooth), lerp(1.8, .64, smooth));
+    pet.position.y = lerp(2.34, .46, easeInOut(progress01));
+    pet.scale.set(lerp(1.68, .64, smooth), lerp(.18, .34, smooth), lerp(1.68, .64, smooth));
     particleMaterial.opacity = .28 * (1 - progress01);
   } else if (simulation.phase === 'points') {
     particleMaterial.opacity = 1 - progress01;
@@ -448,7 +475,7 @@ function updateSimulation(delta) {
     impactRing.scale.setScalar(1.2 + rewardPulse * 1.8);
   } else if (simulation.phase === 'return') {
     const settle = easeOut(progress01);
-    pet.position.y = lerp(.5, .46, settle); pet.scale.set(.64, .34, .64);
+    pet.position.y = lerp(.46, .46, settle); pet.scale.set(.64, .34, .64);
     particleMaterial.opacity = 0;
   }
   if (progress01 >= 1) {
