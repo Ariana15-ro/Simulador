@@ -35,12 +35,11 @@ html, body {
     border: 1px solid rgba(56, 216, 255, 0.38);
     border-radius: 12px;
     box-shadow: 0 0 0 1px rgba(164, 226, 255, 0.09), 0 18px 36px rgba(0, 0, 0, 0.18), inset 0 0 22px rgba(56, 216, 255, 0.06);
-    backdrop-filter: blur(12px) saturate(1.2);
-    -webkit-backdrop-filter: blur(12px) saturate(1.2);
     z-index: 110;
     pointer-events: none;
     opacity: 1;
     transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    --scan-progress: 0;
 }
 
 #face-scan::before {
@@ -104,31 +103,80 @@ html, body {
     display: block;
     width: 100%;
     height: 210px;
-    opacity: 0.18;
-    transform: scale(0.82);
-    transform-origin: center;
-    transition: opacity 0.6s ease, transform 0.8s ease;
-}
-
-#face-scan[data-state="scanning"] .face-scan-visual,
-#face-scan[data-state="matched"] .face-scan-visual {
     opacity: 1;
-    transform: scale(1);
+    transition: opacity 0.3s ease, transform 0.5s ease;
 }
 
 #face-scan[data-state="idle"] .face-scan-visual {
-    opacity: 0;
-    transform: scale(0.82);
+    opacity: 0.15;
 }
 
-.face-silhouette {
-    fill: rgba(128, 196, 255, 0.04);
+.face-figure {
+    opacity: 0.2;
+    transform: translateY(12px) scale(calc(0.45 + var(--scan-progress) * 0.55));
+    transform-origin: center;
+    transition: transform 0.45s ease, opacity 0.25s ease;
+}
+
+#face-scan[data-state="scanning"] .face-figure,
+#face-scan[data-state="matched"] .face-figure {
+    opacity: 1;
+    transform: translateY(-4px) scale(calc(0.45 + var(--scan-progress) * 0.6));
+}
+
+#face-scan[data-state="matched"] .face-figure {
+    transform: translateY(-4px) scale(1);
+}
+
+.face-guide {
+    fill: rgba(95, 255, 200, 0.04);
+    stroke: rgba(95, 255, 200, 0.55);
+    stroke-width: 1.1;
+    opacity: 0.18;
+    transition: opacity 0.2s ease, stroke 0.2s ease, fill 0.2s ease;
+}
+
+#face-scan[data-state="scanning"] .face-guide {
+    opacity: calc(var(--scan-progress) * 1.2);
+}
+
+#face-scan[data-state="matched"] .face-guide,
+#face-scan .face-guide.ready {
+    fill: rgba(95, 255, 200, 0.12);
+    stroke: var(--mint);
+    opacity: 1;
+}
+
+.face-child-head {
+    fill: rgba(130, 202, 255, 0.08);
     stroke: var(--cyan);
-    stroke-width: 1.6;
+    stroke-width: 1.2;
+}
+
+.face-child-hair,
+.face-neck,
+.face-shoulders,
+.face-mouth,
+.face-eye {
+    stroke: var(--cyan);
+    fill: none;
+    stroke-width: 1.3;
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.8;
-    transition: stroke 0.25s ease, fill 0.25s ease, opacity 0.25s ease;
+}
+
+.face-child-hair {
+    fill: rgba(122, 201, 255, 0.06);
+}
+
+.face-mouth {
+    opacity: 0.82;
+}
+
+.face-eye {
+    fill: var(--cyan);
+    stroke: none;
+    opacity: 0.7;
 }
 
 .face-corners path,
@@ -150,14 +198,14 @@ html, body {
     fill: none;
     stroke: var(--cyan);
     stroke-width: 0.8;
-    opacity: 0.08;
+    opacity: 0;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
 .face-points circle {
     fill: var(--cyan);
-    opacity: 0.08;
+    opacity: 0;
     transform: scale(0.7);
     transform-origin: center;
 }
@@ -167,44 +215,46 @@ html, body {
     stroke: var(--mint);
     stroke-width: 1.4;
     stroke-linecap: round;
-    opacity: 0.02;
+    opacity: 0;
     transform: translateY(0);
     transform-box: fill-box;
     transform-origin: center;
 }
 
 #face-scan[data-state="scanning"] .face-scan-line {
-    opacity: 0.9;
+    opacity: calc(var(--scan-progress) * 1.4 - 0.25);
     animation: faceScanSweep 1.2s ease-in-out 2;
 }
 
-#face-scan[data-state="scanning"] .face-silhouette {
-    stroke: var(--cyan);
-}
-
-#face-scan[data-state="matched"] .face-silhouette,
+#face-scan[data-state="matched"] .face-child-head,
+#face-scan[data-state="matched"] .face-child-hair,
+#face-scan[data-state="matched"] .face-mouth,
+#face-scan[data-state="matched"] .face-eye,
 #face-scan[data-state="matched"] .face-corners path,
 #face-scan[data-state="matched"] .face-mesh path,
-#face-scan[data-state="matched"] .face-points circle {
+#face-scan[data-state="matched"] .face-points circle,
+#face-scan[data-state="matched"] .face-neck,
+#face-scan[data-state="matched"] .face-shoulders {
     stroke: var(--mint);
     fill: var(--mint);
 }
 
-#face-scan[data-state="matched"] .face-scan-line {
-    stroke: var(--mint);
-    opacity: 0.85;
-}
-
 #face-scan[data-state="scanning"] .face-mesh path,
 #face-scan[data-state="scanning"] .face-points circle {
-    opacity: 0.9;
+    opacity: calc((var(--scan-progress) - 0.6) * 2.2);
 }
 
-#face-scan[data-state="off"] .face-silhouette,
+#face-scan[data-state="off"] .face-guide,
 #face-scan[data-state="off"] .face-corners path,
 #face-scan[data-state="off"] .face-mesh path,
 #face-scan[data-state="off"] .face-points circle,
-#face-scan[data-state="off"] .face-scan-line {
+#face-scan[data-state="off"] .face-scan-line,
+#face-scan[data-state="off"] .face-figure,
+#face-scan[data-state="off"] .face-child-head,
+#face-scan[data-state="off"] .face-child-hair,
+#face-scan[data-state="off"] .face-mouth,
+#face-scan[data-state="off"] .face-eye,
+#face-scan[data-state="off"] .face-shoulders {
     opacity: 0.08;
 }
 
@@ -262,11 +312,11 @@ html, body {
 }
 
 @keyframes faceScanSweep {
-    0% { transform: translateY(0); opacity: 0.3; }
-    25% { transform: translateY(18px); opacity: 0.9; }
-    50% { transform: translateY(100px); opacity: 1; }
-    75% { transform: translateY(18px); opacity: 0.85; }
-    100% { transform: translateY(0); opacity: 0.25; }
+    0% { transform: translateY(0); opacity: 0.15; }
+    25% { transform: translateY(18px); opacity: 0.8; }
+    50% { transform: translateY(102px); opacity: 1; }
+    75% { transform: translateY(18px); opacity: 0.7; }
+    100% { transform: translateY(0); opacity: 0.08; }
 }
 
 @media (max-width: 700px) {
@@ -296,7 +346,7 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
     #face-scan,
     .face-scan-visual,
-    .face-silhouette,
+    .face-figure,
     .face-corners path,
     .face-mesh path,
     .face-points circle,
@@ -308,7 +358,7 @@ html, body {
     }
 
     #face-scan[data-state="scanning"] .face-scan-line {
-        opacity: 0.5;
+        opacity: 0.4;
     }
 }
 
@@ -717,75 +767,3 @@ button { font: inherit; }
     *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .6s !important; }
 }
 
-#face-scan {
-    --face-color: var(--cyan);
-    position: fixed;
-    z-index: 20;
-    top: 92px;
-    right: 28px;
-    width: 260px;
-    height: 320px;
-    padding: 15px 16px 13px;
-    border: 1px solid rgba(56,216,255,.34);
-    background: rgba(2,8,16,.62);
-    box-shadow: 0 0 26px rgba(56,216,255,.08), inset 0 0 26px rgba(56,216,255,.035);
-    color: #e8faff;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity .32s ease, border-color .32s ease, box-shadow .32s ease;
-}
-.face-scan-heading, .face-scan-readout { display: flex; justify-content: space-between; align-items: center; }
-.face-scan-heading { color: var(--cyan); font-size: 9px; letter-spacing: .16em; }
-.face-scan-index { color: rgba(56,216,255,.55); }
-.face-scan-visual { display: block; width: 100%; height: 230px; margin: 5px auto 0; overflow: visible; }
-.face-silhouette, .face-corners path, .face-mesh path, .face-scan-line { fill: none; stroke: var(--face-color); stroke-linecap: round; stroke-linejoin: round; }
-.face-silhouette { stroke-width: 1.25; opacity: 0; transform: scale(.82); transform-origin: center; filter: drop-shadow(0 0 5px var(--face-color)); }
-.face-corners path { stroke-width: 1.8; filter: drop-shadow(0 0 4px var(--face-color)); }
-.face-mesh { opacity: 0; }
-.face-mesh path { stroke-width: .65; opacity: .58; }
-.face-points { opacity: 0; }
-.face-points circle { fill: var(--face-color); filter: drop-shadow(0 0 3px var(--face-color)); }
-.face-scan-line { stroke-width: 1.2; opacity: 0; filter: drop-shadow(0 0 5px var(--face-color)); }
-.face-scan-readout { min-height: 20px; gap: 8px; color: var(--face-color); font-size: 8px; letter-spacing: .09em; }
-.face-scan-readout strong { flex: none; font-size: 10px; }
-.face-scan-name { display: block; margin-top: 4px; color: var(--mint); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-align: right; }
-#face-scan[data-state="idle"] .face-silhouette,
-#face-scan[data-state="idle"] .face-mesh,
-#face-scan[data-state="idle"] .face-points,
-#face-scan[data-state="idle"] .face-scan-line { opacity: 0; }
-#face-scan[data-state="idle"] .face-scan-name { display: none; }
-#face-scan[data-state="scanning"] .face-silhouette { animation: face-approach .8s ease-out forwards; }
-#face-scan[data-state="scanning"] .face-mesh { animation: face-reveal .3s .16s ease-out forwards; }
-#face-scan[data-state="scanning"] .face-points circle { animation: face-reveal .18s calc(.24s + var(--point-order) * 18ms) ease-out forwards; }
-#face-scan[data-state="scanning"] .face-scan-line { animation: face-sweep 1.8s ease-in-out 2; }
-#face-scan[data-state="scanning"] .face-scan-name { display: none; }
-#face-scan[data-state="matched"] { --face-color: var(--mint); border-color: rgba(95,255,200,.48); box-shadow: 0 0 28px rgba(95,255,200,.12), inset 0 0 26px rgba(95,255,200,.045); }
-#face-scan[data-state="matched"] .face-silhouette,
-#face-scan[data-state="matched"] .face-mesh,
-#face-scan[data-state="matched"] .face-points { opacity: 1; transform: scale(1); }
-#face-scan[data-state="matched"] .face-scan-line { opacity: 0; }
-#face-scan[data-state="matched"] .face-scan-readout { color: var(--mint); }
-#face-scan[data-state="off"] { opacity: .08; }
-@keyframes face-approach { to { opacity: 1; transform: scale(1); } }
-@keyframes face-reveal { to { opacity: 1; } }
-@keyframes face-sweep {
-    0% { opacity: 0; transform: translateY(0); }
-    12%, 88% { opacity: .9; }
-    50% { opacity: .9; transform: translateY(150px); }
-    100% { opacity: 0; transform: translateY(0); }
-}
-@media (max-width: 700px) {
-    #face-scan { top: 72px; right: auto; left: 50%; width: 174px; height: 218px; padding: 10px 11px 8px; transform: translateX(-50%); }
-    .face-scan-heading { font-size: 7px; }
-    .face-scan-visual { height: 145px; margin-top: 2px; }
-    .face-scan-readout { font-size: 6px; }
-    .face-scan-readout strong { font-size: 8px; }
-    .face-scan-name { margin-top: 2px; font-size: 9px; }
-}
-@media (prefers-reduced-motion: reduce) {
-    #face-scan, #face-scan * { animation: none !important; transition-duration: .25s !important; }
-    #face-scan[data-state="scanning"] .face-silhouette,
-    #face-scan[data-state="scanning"] .face-mesh,
-    #face-scan[data-state="scanning"] .face-points { opacity: 1; transform: scale(1); }
-    .face-scan-line { display: none; }
-}
