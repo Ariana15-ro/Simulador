@@ -29,6 +29,27 @@
             <div class="component-info" id="component-info" aria-live="polite"><div class="component-name" id="comp-name">Mapa de componentes</div><div class="component-desc" id="comp-desc">Activa las etiquetas para explorar cada módulo de la estación.</div><div class="component-material" id="comp-material">Órbita: arrastra · Zoom: rueda · Pan: botón derecho</div></div>
             <div class="system-foot"><span>ALTURA MÁX.</span><strong>100 cm</strong><span class="foot-status">● ONLINE</span></div>
         </aside>
+        <section id="face-scan" data-state="idle" aria-label="Reconocimiento facial simulado">
+            <div class="face-scan-heading"><span>IDENTIDAD / VISIÓN</span><span class="face-scan-index">01</span></div>
+            <svg class="face-scan-visual" viewBox="0 0 220 230" role="img" aria-hidden="true">
+                <path class="face-silhouette" d="M110 27 C75 27 57 52 58 91 C59 119 70 141 88 151 L88 164 C67 168 44 180 32 198 M188 198 C176 180 153 168 132 164 L132 151 C150 141 161 119 162 91 C163 52 145 27 110 27 Z M32 198 C53 207 78 212 110 212 C142 212 167 207 188 198" />
+                <g class="face-corners"><path d="M31 52 V30 H53 M167 30 H189 V52 M31 176 V198 H53 M167 198 H189 V176" /></g>
+                <g class="face-mesh">
+                    <path d="M72 85 L91 78 L110 81 L129 78 L148 85 M76 99 L94 96 L110 99 L126 96 L144 99 M81 114 L97 116 L110 114 L123 116 L139 114 M91 132 L102 137 L110 139 L118 137 L129 132 M87 68 L94 91 L97 116 L102 137 M110 56 L110 81 L110 99 L110 114 L110 139 M133 68 L126 91 L123 116 L118 137 M74 86 L84 104 L91 121 M146 86 L136 104 L129 121 M94 96 L101 105 L110 107 L119 105 L126 96 M101 105 L98 125 L110 130 L122 125 L119 105 M87 148 L99 158 L110 161 L121 158 L133 148 M67 179 L88 169 L110 166 L132 169 L153 179" />
+                </g>
+                <g class="face-points">
+                    <circle cx="72" cy="85" r="1.7"/><circle cx="80" cy="81" r="1.7"/><circle cx="91" cy="78" r="1.7"/><circle cx="101" cy="79" r="1.7"/><circle cx="110" cy="81" r="1.7"/><circle cx="119" cy="79" r="1.7"/><circle cx="129" cy="78" r="1.7"/><circle cx="140" cy="81" r="1.7"/><circle cx="148" cy="85" r="1.7"/>
+                    <circle cx="76" cy="99" r="1.7"/><circle cx="85" cy="97" r="1.7"/><circle cx="94" cy="96" r="1.7"/><circle cx="101" cy="101" r="1.7"/><circle cx="110" cy="99" r="1.7"/><circle cx="119" cy="101" r="1.7"/><circle cx="126" cy="96" r="1.7"/><circle cx="135" cy="97" r="1.7"/><circle cx="144" cy="99" r="1.7"/>
+                    <circle cx="81" cy="114" r="1.7"/><circle cx="91" cy="116" r="1.7"/><circle cx="97" cy="116" r="1.7"/><circle cx="104" cy="114" r="1.7"/><circle cx="110" cy="114" r="1.7"/><circle cx="116" cy="114" r="1.7"/><circle cx="123" cy="116" r="1.7"/><circle cx="129" cy="116" r="1.7"/><circle cx="139" cy="114" r="1.7"/>
+                    <circle cx="91" cy="132" r="1.7"/><circle cx="102" cy="137" r="1.7"/><circle cx="110" cy="139" r="1.7"/><circle cx="118" cy="137" r="1.7"/><circle cx="129" cy="132" r="1.7"/>
+                    <circle cx="87" cy="148" r="1.7"/><circle cx="99" cy="158" r="1.7"/><circle cx="110" cy="161" r="1.7"/><circle cx="121" cy="158" r="1.7"/><circle cx="133" cy="148" r="1.7"/>
+                    <circle cx="67" cy="179" r="1.7"/><circle cx="88" cy="169" r="1.7"/><circle cx="110" cy="166" r="1.7"/><circle cx="132" cy="169" r="1.7"/><circle cx="153" cy="179" r="1.7"/>
+                </g>
+                <line class="face-scan-line" x1="28" x2="192" y1="37" y2="37" />
+            </svg>
+            <div class="face-scan-readout"><span id="face-scan-status" aria-live="polite">SIN ROSTRO DETECTADO</span><strong id="face-scan-percent">0%</strong></div>
+            <strong class="face-scan-name" id="face-scan-name"></strong>
+        </section>
         <div class="scene-hint"><span class="crosshair">＋</span><span>ARRASTRA PARA ORBITAR<br><b>RUEDA PARA ACERCAR</b></span></div><div id="canvas-container"></div><div class="scene-caption"><span class="caption-line"></span><div><strong>PF / COMPACT CHAMBER</strong><small>Vista técnica · escala 1:1</small></div></div>
     </main>
 

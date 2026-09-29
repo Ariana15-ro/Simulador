@@ -24,6 +24,294 @@ html, body {
     z-index: 1;
 }
 
+#face-scan {
+    position: fixed;
+    top: 92px;
+    right: 34px;
+    width: 260px;
+    height: 320px;
+    padding: 12px 12px 10px;
+    background: rgba(3, 10, 18, 0.42);
+    border: 1px solid rgba(56, 216, 255, 0.38);
+    border-radius: 12px;
+    box-shadow: 0 0 0 1px rgba(164, 226, 255, 0.09), 0 18px 36px rgba(0, 0, 0, 0.18), inset 0 0 22px rgba(56, 216, 255, 0.06);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    z-index: 110;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#face-scan::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(123, 228, 255, 0.18);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+#face-scan::after {
+    content: "";
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 142px;
+    width: 28px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(95, 255, 200, 0), rgba(95, 255, 200, 0.7), rgba(56, 216, 255, 0));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#face-scan[data-state="scanning"]::after {
+    opacity: 1;
+}
+
+#face-scan[data-state="off"] {
+    opacity: 0.22;
+    filter: grayscale(0.2);
+}
+
+#face-scan[data-state="idle"] {
+    border-color: rgba(56, 216, 255, 0.22);
+}
+
+#face-scan[data-state="matched"] {
+    border-color: rgba(95, 255, 200, 0.52);
+    box-shadow: 0 0 0 1px rgba(95, 255, 200, 0.08), 0 18px 36px rgba(0, 0, 0, 0.18), inset 0 0 22px rgba(95, 255, 200, 0.08);
+}
+
+.face-scan-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 2px;
+    font-size: 0.54rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan);
+}
+
+.face-scan-index {
+    color: var(--mint);
+    opacity: 0.8;
+}
+
+.face-scan-visual {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 210px;
+    opacity: 0.18;
+    transform: scale(0.82);
+    transform-origin: center;
+    transition: opacity 0.6s ease, transform 0.8s ease;
+}
+
+#face-scan[data-state="scanning"] .face-scan-visual,
+#face-scan[data-state="matched"] .face-scan-visual {
+    opacity: 1;
+    transform: scale(1);
+}
+
+#face-scan[data-state="idle"] .face-scan-visual {
+    opacity: 0;
+    transform: scale(0.82);
+}
+
+.face-silhouette {
+    fill: rgba(128, 196, 255, 0.04);
+    stroke: var(--cyan);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.8;
+    transition: stroke 0.25s ease, fill 0.25s ease, opacity 0.25s ease;
+}
+
+.face-corners path,
+.face-mesh path,
+.face-scan-line,
+.face-points circle {
+    transition: opacity 0.2s ease, stroke 0.2s ease, fill 0.2s ease, transform 0.2s ease;
+}
+
+.face-corners path {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 1.1;
+    stroke-linecap: round;
+    opacity: 0.9;
+}
+
+.face-mesh path {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 0.8;
+    opacity: 0.08;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.face-points circle {
+    fill: var(--cyan);
+    opacity: 0.08;
+    transform: scale(0.7);
+    transform-origin: center;
+}
+
+.face-scan-line {
+    fill: none;
+    stroke: var(--mint);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    opacity: 0.02;
+    transform: translateY(0);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+#face-scan[data-state="scanning"] .face-scan-line {
+    opacity: 0.9;
+    animation: faceScanSweep 1.2s ease-in-out 2;
+}
+
+#face-scan[data-state="scanning"] .face-silhouette {
+    stroke: var(--cyan);
+}
+
+#face-scan[data-state="matched"] .face-silhouette,
+#face-scan[data-state="matched"] .face-corners path,
+#face-scan[data-state="matched"] .face-mesh path,
+#face-scan[data-state="matched"] .face-points circle {
+    stroke: var(--mint);
+    fill: var(--mint);
+}
+
+#face-scan[data-state="matched"] .face-scan-line {
+    stroke: var(--mint);
+    opacity: 0.85;
+}
+
+#face-scan[data-state="scanning"] .face-mesh path,
+#face-scan[data-state="scanning"] .face-points circle {
+    opacity: 0.9;
+}
+
+#face-scan[data-state="off"] .face-silhouette,
+#face-scan[data-state="off"] .face-corners path,
+#face-scan[data-state="off"] .face-mesh path,
+#face-scan[data-state="off"] .face-points circle,
+#face-scan[data-state="off"] .face-scan-line {
+    opacity: 0.08;
+}
+
+.face-scan-readout {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 0 4px;
+    color: var(--cyan);
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+#face-scan-status {
+    min-height: 1.3em;
+    color: var(--cyan);
+    transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+#face-scan-percent {
+    color: var(--mint);
+    font-size: 0.82rem;
+    letter-spacing: 0.09em;
+    font-weight: 700;
+}
+
+#face-scan[data-state="matched"] #face-scan-status,
+#face-scan[data-state="matched"] #face-scan-percent {
+    color: var(--mint);
+}
+
+#face-scan[data-state="off"] #face-scan-status,
+#face-scan[data-state="off"] #face-scan-percent {
+    opacity: 0.3;
+}
+
+.face-scan-name {
+    display: block;
+    min-height: 1.5em;
+    margin-top: 8px;
+    padding: 0 4px;
+    color: #e7faff;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+#face-scan[data-state="idle"] .face-scan-name,
+#face-scan[data-state="off"] .face-scan-name {
+    opacity: 0;
+}
+
+@keyframes faceScanSweep {
+    0% { transform: translateY(0); opacity: 0.3; }
+    25% { transform: translateY(18px); opacity: 0.9; }
+    50% { transform: translateY(100px); opacity: 1; }
+    75% { transform: translateY(18px); opacity: 0.85; }
+    100% { transform: translateY(0); opacity: 0.25; }
+}
+
+@media (max-width: 700px) {
+    #face-scan {
+        top: 82px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 220px;
+        height: 280px;
+    }
+
+    #face-scan::after {
+        display: none;
+    }
+
+    .face-scan-heading {
+        font-size: 0.48rem;
+        letter-spacing: 0.12em;
+    }
+
+    .face-scan-visual {
+        height: 176px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #face-scan,
+    .face-scan-visual,
+    .face-silhouette,
+    .face-corners path,
+    .face-mesh path,
+    .face-points circle,
+    .face-scan-line,
+    #face-scan-status,
+    #face-scan-percent {
+        transition: opacity 0.18s ease, transform 0.18s ease;
+        animation: none !important;
+    }
+
+    #face-scan[data-state="scanning"] .face-scan-line {
+        opacity: 0.5;
+    }
+}
+
 /* ===== Loading splash ===== */
 #loading {
     position: fixed;
@@ -427,4 +715,77 @@ button { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
     .eyebrow span { animation: none; }
     *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .6s !important; }
+}
+
+#face-scan {
+    --face-color: var(--cyan);
+    position: fixed;
+    z-index: 20;
+    top: 92px;
+    right: 28px;
+    width: 260px;
+    height: 320px;
+    padding: 15px 16px 13px;
+    border: 1px solid rgba(56,216,255,.34);
+    background: rgba(2,8,16,.62);
+    box-shadow: 0 0 26px rgba(56,216,255,.08), inset 0 0 26px rgba(56,216,255,.035);
+    color: #e8faff;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity .32s ease, border-color .32s ease, box-shadow .32s ease;
+}
+.face-scan-heading, .face-scan-readout { display: flex; justify-content: space-between; align-items: center; }
+.face-scan-heading { color: var(--cyan); font-size: 9px; letter-spacing: .16em; }
+.face-scan-index { color: rgba(56,216,255,.55); }
+.face-scan-visual { display: block; width: 100%; height: 230px; margin: 5px auto 0; overflow: visible; }
+.face-silhouette, .face-corners path, .face-mesh path, .face-scan-line { fill: none; stroke: var(--face-color); stroke-linecap: round; stroke-linejoin: round; }
+.face-silhouette { stroke-width: 1.25; opacity: 0; transform: scale(.82); transform-origin: center; filter: drop-shadow(0 0 5px var(--face-color)); }
+.face-corners path { stroke-width: 1.8; filter: drop-shadow(0 0 4px var(--face-color)); }
+.face-mesh { opacity: 0; }
+.face-mesh path { stroke-width: .65; opacity: .58; }
+.face-points { opacity: 0; }
+.face-points circle { fill: var(--face-color); filter: drop-shadow(0 0 3px var(--face-color)); }
+.face-scan-line { stroke-width: 1.2; opacity: 0; filter: drop-shadow(0 0 5px var(--face-color)); }
+.face-scan-readout { min-height: 20px; gap: 8px; color: var(--face-color); font-size: 8px; letter-spacing: .09em; }
+.face-scan-readout strong { flex: none; font-size: 10px; }
+.face-scan-name { display: block; margin-top: 4px; color: var(--mint); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-align: right; }
+#face-scan[data-state="idle"] .face-silhouette,
+#face-scan[data-state="idle"] .face-mesh,
+#face-scan[data-state="idle"] .face-points,
+#face-scan[data-state="idle"] .face-scan-line { opacity: 0; }
+#face-scan[data-state="idle"] .face-scan-name { display: none; }
+#face-scan[data-state="scanning"] .face-silhouette { animation: face-approach .8s ease-out forwards; }
+#face-scan[data-state="scanning"] .face-mesh { animation: face-reveal .3s .16s ease-out forwards; }
+#face-scan[data-state="scanning"] .face-points circle { animation: face-reveal .18s calc(.24s + var(--point-order) * 18ms) ease-out forwards; }
+#face-scan[data-state="scanning"] .face-scan-line { animation: face-sweep 1.8s ease-in-out 2; }
+#face-scan[data-state="scanning"] .face-scan-name { display: none; }
+#face-scan[data-state="matched"] { --face-color: var(--mint); border-color: rgba(95,255,200,.48); box-shadow: 0 0 28px rgba(95,255,200,.12), inset 0 0 26px rgba(95,255,200,.045); }
+#face-scan[data-state="matched"] .face-silhouette,
+#face-scan[data-state="matched"] .face-mesh,
+#face-scan[data-state="matched"] .face-points { opacity: 1; transform: scale(1); }
+#face-scan[data-state="matched"] .face-scan-line { opacity: 0; }
+#face-scan[data-state="matched"] .face-scan-readout { color: var(--mint); }
+#face-scan[data-state="off"] { opacity: .08; }
+@keyframes face-approach { to { opacity: 1; transform: scale(1); } }
+@keyframes face-reveal { to { opacity: 1; } }
+@keyframes face-sweep {
+    0% { opacity: 0; transform: translateY(0); }
+    12%, 88% { opacity: .9; }
+    50% { opacity: .9; transform: translateY(150px); }
+    100% { opacity: 0; transform: translateY(0); }
+}
+@media (max-width: 700px) {
+    #face-scan { top: 72px; right: auto; left: 50%; width: 174px; height: 218px; padding: 10px 11px 8px; transform: translateX(-50%); }
+    .face-scan-heading { font-size: 7px; }
+    .face-scan-visual { height: 145px; margin-top: 2px; }
+    .face-scan-readout { font-size: 6px; }
+    .face-scan-readout strong { font-size: 8px; }
+    .face-scan-name { margin-top: 2px; font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #face-scan, #face-scan * { animation: none !important; transition-duration: .25s !important; }
+    #face-scan[data-state="scanning"] .face-silhouette,
+    #face-scan[data-state="scanning"] .face-mesh,
+    #face-scan[data-state="scanning"] .face-points { opacity: 1; transform: scale(1); }
+    .face-scan-line { display: none; }
 }

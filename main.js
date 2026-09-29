@@ -295,7 +295,49 @@ const status = document.querySelector('#status-text'), insertBtn = document.quer
 const counter = document.querySelector('#counter'), points = document.querySelector('#points'), progress = document.querySelector('#daily-progress');
 const phaseDetail = document.querySelector('#phase-detail'), userState = document.querySelector('#user-state'), userBadge = document.querySelector('#user-badge');
 const uiPanel = document.querySelector('#ui-panel');
+const faceScan = document.querySelector('#face-scan');
+const faceScanStatus = document.querySelector('#face-scan-status');
+const faceScanPercent = document.querySelector('#face-scan-percent');
+const faceScanName = document.querySelector('#face-scan-name');
+const faceScanPoints = [...faceScan.querySelectorAll('.face-points circle')];
+const faceScanMesh = [...faceScan.querySelectorAll('.face-mesh path')];
+const faceScanCorners = [...faceScan.querySelectorAll('.face-corners path')];
+faceScanPoints.forEach((point, index) => {
+  point.style.setProperty('--point-order', index);
+  point.style.transitionDelay = `${index * 16}ms`;
+});
+faceScanMesh.forEach((path, index) => {
+  path.style.transitionDelay = `${index * 18}ms`;
+});
+faceScanCorners.forEach((path, index) => {
+  path.style.transitionDelay = `${index * 30}ms`;
+});
 const ledObjects = [...document.querySelectorAll('.status-leds .led')];
+
+function syncFaceScanVisualState(state) {
+  const matched = state === 'matched';
+  const scanning = state === 'scanning';
+  const off = state === 'off';
+  faceScan.dataset.state = state;
+  faceScanPoints.forEach((point, index) => {
+    point.style.opacity = off ? '0.08' : scanning || matched ? '1' : '0.12';
+    point.style.fill = matched ? 'var(--mint)' : 'var(--cyan)';
+    point.style.transform = scanning || matched ? 'scale(1)' : 'scale(0.8)';
+    point.style.transitionDelay = `${index * 16}ms`;
+  });
+  faceScanMesh.forEach((path, index) => {
+    path.style.opacity = off ? '0.08' : scanning || matched ? '0.9' : '0.14';
+    path.style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
+    path.style.transitionDelay = `${index * 18}ms`;
+  });
+  faceScanCorners.forEach((path) => {
+    path.style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
+    path.style.opacity = off ? '0.15' : '0.9';
+  });
+  faceScan.querySelector('.face-silhouette').style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
+  faceScan.querySelector('.face-scan-line').style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
+  faceScan.querySelector('.face-scan-line').style.opacity = off ? '0.08' : scanning || matched ? '0.9' : '0.08';
+}
 const simulation = { phase: 'waiting', elapsed: 0, duration: 0, busy: false, userVerified: false, userExists: true, attempts: 0, processed: 3, points: 1240, validBottle: true };
 const phases = { face: 4.6, profile: 2.1, register: 2.2, verify: 2.5, insert: 3.4, topSensor: 2.4, validate: 3.6, descend: 2.6, zoneSensor: 2.3, compress: 5.4, impact: 2.4, lift: 2.5, transfer: 2.5, points: 2.8, return: 2.0, reject: 2.2 };
 let showLabels = false;
@@ -360,6 +402,30 @@ function setComponentActive(component, active) {
 }
 function beginPhase(name) {
   simulation.phase=name; simulation.elapsed=0; simulation.duration=phases[name];
+  if (name === 'face') {
+    syncFaceScanVisualState('scanning');
+    faceScanStatus.textContent = 'DETECTANDO ROSTRO';
+    faceScanPercent.textContent = '0%';
+    faceScanName.textContent = '';
+    faceScan.classList.remove('face-animate');
+    void faceScan.offsetWidth;
+    faceScan.classList.add('face-animate');
+  } else if (name === 'profile') {
+    syncFaceScanVisualState('matched');
+    faceScanStatus.textContent = 'COINCIDENCIA 98,7 %';
+    faceScanPercent.textContent = '98,7%';
+    faceScanName.textContent = document.querySelector('#user-name').textContent.trim();
+  } else if (name === 'verify') {
+    syncFaceScanVisualState('off');
+    faceScanStatus.textContent = 'VERIFICANDO IDENTIDAD';
+    faceScanPercent.textContent = '100%';
+    faceScanName.textContent = document.querySelector('#user-name').textContent.trim();
+  } else {
+    syncFaceScanVisualState('idle');
+    faceScanStatus.textContent = 'SIN ROSTRO DETECTADO';
+    faceScanPercent.textContent = '0%';
+    faceScanName.textContent = '';
+  }
   points.style.color = '';
   points.style.textShadow = '';
   points.style.transform = '';
@@ -421,6 +487,22 @@ function updateSimulation(delta) {
   simulation.elapsed += simulationDelta;
   const progress01 = clamp01(simulation.elapsed / simulation.duration);
   const smooth = easeInOut(progress01);
+  if (simulation.phase === 'face') {
+    const percentValue = Math.round(progress01 * 100);
+    faceScanPercent.textContent = `${percentValue}%`;
+    faceScanStatus.textContent = progress01 < .3 ? 'DETECTANDO ROSTRO' : progress01 < .7 ? 'ANALIZANDO RASGOS' : 'COMPARANDO PERFIL';
+    if (faceScan.dataset.state !== 'scanning') {
+      syncFaceScanVisualState('scanning');
+    }
+  } else if (simulation.phase === 'verify') {
+    if (progress01 >= .78 && faceScan.dataset.state !== 'off') {
+      syncFaceScanVisualState('off');
+      faceScanStatus.textContent = 'VERIFICANDO IDENTIDAD';
+      faceScanPercent.textContent = '100%';
+    } else if (faceScan.dataset.state !== 'off') {
+      faceScanPercent.textContent = `${Math.round(progress01 * 100)}%`;
+    }
+  }
   const cinematicPhase = simulation.phase === 'face' || simulation.phase === 'validate' || simulation.phase === 'compress' || simulation.phase === 'impact' || simulation.phase === 'points';
   const focusEnergy = simulation.phase === 'compress' || simulation.phase === 'impact' ? 1 : cinematicPhase ? .55 : .2;
   platformRing.rotation.z += simulationDelta * (.35 + focusEnergy * 1.8);
