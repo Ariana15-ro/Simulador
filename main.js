@@ -90,15 +90,59 @@ function hologramMaterial(color = cyan, opacity = .72) {
   }
   return hologramMaterials.get(key);
 }
-const shellMat = hologramMaterial();
+const shellMat = new THREE.ShaderMaterial({
+  uniforms: { uColor: { value: new THREE.Color(cyan) }, uTime: { value: 0 }, uOpacity: { value: 0.35 }, uFlickerEnabled: { value: reducedMotion ? 0 : 1 } },
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vViewDirection;
+    varying vec3 vWorldPosition;
+    void main() {
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vec4 viewPosition = viewMatrix * worldPosition;
+      vNormal = normalize(normalMatrix * normal);
+      vViewDirection = normalize(-viewPosition.xyz);
+      vWorldPosition = worldPosition.xyz;
+      gl_Position = projectionMatrix * viewPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uColor;
+    uniform float uTime;
+    uniform float uOpacity;
+    uniform float uFlickerEnabled;
+    varying vec3 vNormal;
+    varying vec3 vViewDirection;
+    varying vec3 vWorldPosition;
+    void main() {
+      float fresnel = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewDirection))), 3.0);
+      float scan = smoothstep(.92, 1.0, sin(vWorldPosition.y * 105.0 - uTime * 3.2));
+      float flicker = 1.0 + sin(uTime * 4.0) * .05 * uFlickerEnabled;
+      float alpha = (0.08 + fresnel * 0.35 + scan * 0.22) * uOpacity * flicker;
+      float brightness = .34 + fresnel * 1.3 + scan * .45;
+      gl_FragColor = vec4(uColor * brightness * flicker, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  side: THREE.DoubleSide,
+  toneMapped: false
+});
 const edgeMat = new THREE.MeshBasicMaterial({ color: mint, wireframe: true, transparent: true, opacity: .42, depthWrite: false, blending: THREE.AdditiveBlending });
 const glowMat = hologramMaterial();
 const darkMat = hologramMaterial();
-const woodMat = hologramMaterial();
 const crispEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: true, opacity: .72, blending: THREE.AdditiveBlending });
 const softEdgeMat = new THREE.LineBasicMaterial({ color: cyan, transparent: true, opacity: .34, blending: THREE.AdditiveBlending });
 const machine = new THREE.Group();
 scene.add(machine);
+
+const shellPanels = [];
+function applyPanelOpacity(value) {
+  shellMat.uniforms.uOpacity.value = value;
+  shellPanels.forEach((panel) => {
+    panel.material = shellMat;
+  });
+}
 
 const energyPlatform = new THREE.Group();
 machine.add(energyPlatform);
@@ -173,7 +217,6 @@ function box(name, size, position, material = darkMat, parent = machine) {
 function highlightableBox(name, size, position, material) {
   return box(name, size, position, material);
 }
-function lineBox(name, size, position, material = woodMat) { return box(name, size, position, material); }
 function label(text, position, color = 'cyan', description = '') {
   const el = document.createElement('div'); el.className = `component-label ${color}${position[0] < 0 ? ' label-left' : ''}`; el.innerHTML = `<b>${text}</b><span>${description}</span>`;
   const obj = new CSS2DObject(el); obj.position.set(...position); obj.userData = { text, description }; machine.add(obj); return obj;
@@ -191,14 +234,9 @@ const panels = new THREE.Group(); machine.add(panels);
 const shellFaces = {};
 for (const [x,z,rot,face] of [[-1.05,0,0,'left'],[1.05,0,0,'right'],[0,-1.05,Math.PI / 2,'back'],[0,1.05,Math.PI / 2,'front']]) {
   const faceGroup = new THREE.Group(); faceGroup.name = `shell-${face}`; panels.add(faceGroup); shellFaces[face] = faceGroup;
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(2.15, 4.25, .12), shellMat); panel.position.set(x,2.47,z); panel.rotation.y = rot; faceGroup.add(panel);
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(2.15, 4.25, .12), shellMat); panel.position.set(x,2.47,z); panel.rotation.y = rot; faceGroup.add(panel); shellPanels.push(panel);
   const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2.15,4.25,.12)), new THREE.LineBasicMaterial({ color: cyan, transparent:true, opacity:.82, blending:THREE.AdditiveBlending })); outline.position.copy(panel.position); outline.rotation.copy(panel.rotation); faceGroup.add(outline);
 }
-// Wooden internal skeleton.
-for (const x of [-.82,.82]) for (const z of [-.82,.82]) lineBox('wooden-skeleton', [.1,4.1,.1], [x,2.42,z]);
-for (const y of [.48, 2.35, 4.38]) for (const z of [-.86,.86]) lineBox('wooden-crossbar', [1.8,.1,.1], [0,y,z]);
-for (const y of [.48, 2.35, 4.38]) for (const x of [-.86,.86]) lineBox('wooden-crossbar', [.1,.1,1.8], [x,y,0]);
-
 // Hopper, chamber, compactor and lower container.
 box('base', [2.1,.25,2.1], [0,.18,0], darkMat);
 const hopper = new THREE.Mesh(new THREE.CylinderGeometry(.75,1.12,.46,4), hologramMaterial()); hopper.position.set(0,4.34,0); hopper.rotation.y=Math.PI/4; machine.add(hopper); addGlowEdges(hopper);
@@ -209,7 +247,6 @@ for (const [x,z,width,depth] of [[0,.81,1.7,.08],[0,-.81,1.7,.08],[.81,0,.08,1.7
 // Servo SG90 on the side with a linkage.
 const servo = highlightableBox('servo', [.42,.6,.3], [1.28,3.05,.15], hologramMaterial());
 const servoArm = highlightableBox('servo-arm', [.08,.75,.08], [1.28,3.52,.15], glowMat); servoArm.rotation.z = -.2;
-box('servo-mounting-plate', [.58,.1,.48], [1.28,2.72,-.08], woodMat);
 const linkageRod = new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,1,12), glowMat);
 linkageRod.name = 'servo-linkage'; machine.add(linkageRod);
 const linkageJoints = [0,1].map(() => {
@@ -232,23 +269,29 @@ function updateServoLinkage() {
 // IR sensors and camera.
 const irTop = highlightableBox('ir-top', [.34,.12,.18], [0,4.03,.72], glowMat.clone());
 const irZone = highlightableBox('ir-zone', [.34,.12,.18], [0,2.67,.82], glowMat.clone());
-box('ir-top-mounting-plate', [.5,.07,.32], [0,4.13,.72], woodMat);
-box('ir-zone-mounting-plate', [.5,.07,.32], [0,2.77,.82], woodMat);
 const cameraUnit = highlightableBox('camera', [.42,.25,.25], [-1.02,3.92,.5], darkMat.clone()); const lens = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.03,20), hologramMaterial()); lens.rotation.x=Math.PI/2; lens.position.set(-1.02,3.92,.66); machine.add(lens);
-// LCD and status LEDs.
-box('lcd-mounting-plate', [.92,.52,.08], [1.08,1.9,.78], woodMat);
+function addLink(start, end, color = cyan, opacity = 0.22) {
+  const points = new Float32Array([start.x, start.y, start.z, end.x, end.y, end.z]);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
+  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending });
+  const line = new THREE.Line(geometry, material);
+  machine.add(line);
+  return line;
+}
 const lcd = box('lcd', [.72,.32,.1], [1.08,1.9,.87], hologramMaterial());
-box('status-led-mounting-plate', [.56,.14,.08], [1.08,2.18,.79], woodMat);
 for (let i=0;i<3;i++) { const led = new THREE.Mesh(new THREE.SphereGeometry(.045,10,10), new THREE.MeshBasicMaterial({color:i===0?mint:cyan, transparent:true, opacity:.95, toneMapped:false, blending:THREE.AdditiveBlending})); led.position.set(1.08 + (i-.9)*.14,2.18,.91); machine.add(led); }
-box('buzzer-mounting-plate', [.42,.1,.08], [1.15,1.44,.79], woodMat);
 const buzzer = new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.08,20), hologramMaterial()); buzzer.rotation.x=Math.PI/2; buzzer.position.set(1.15,1.44,.89); machine.add(buzzer);
+addLink(new THREE.Vector3(-1.02,3.92,.66), new THREE.Vector3(-.2,3.48,.66), cyan, .18);
+addLink(new THREE.Vector3(1.08,1.9,.87), new THREE.Vector3(1.08,2.05,.8), cyan, .16);
+addLink(new THREE.Vector3(1.08,2.18,.91), new THREE.Vector3(1.08,2.05,.87), mint, .18);
+addLink(new THREE.Vector3(1.15,1.44,.89), new THREE.Vector3(1.12,1.42,.8), cyan, .15);
+addLink(new THREE.Vector3(1.28,3.05,.15), new THREE.Vector3(1.28,2.36,.18), mint, .18);
 
 const labelData = [
   ['TOLVA / ENTRADA',[-1.42,4.92,0], 'cyan','Recepción de botella PET'],
   ['SENSOR IR SUPERIOR',[-1.42,4.35,.72], 'mint','Detecta la inserción'],
-  ['ESQUELETO DE MADERA',[-1.42,3.78,.25], 'mint','Listones internos de refuerzo'],
   ['CÁMARA FACIAL',[-1.42,3.21,.58], 'mint','Reconocimiento simulado'],
-  ['ESTRUCTURA DE CARTÓN',[-1.42,2.64,0], 'cyan','Panel PET reciclado · acabado negro mate'],
   ['PLATO DE COMPACTACIÓN',[-1.42,2.07,0], 'cyan','Carrera vertical servo'],
   ['SERVO SG90',[1.85,3.28,.15], 'mint','Actuador de 180°'],
   ['SENSOR IR COMPACTACIÓN',[1.55,2.82,.8], 'mint','Confirma zona despejada'],
@@ -334,19 +377,30 @@ function syncFaceScanVisualState(state) {
     path.style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
     path.style.opacity = off ? '0.15' : '0.9';
   });
-  faceScan.querySelector('.face-silhouette').style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
-  faceScan.querySelector('.face-scan-line').style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
-  faceScan.querySelector('.face-scan-line').style.opacity = off ? '0.08' : scanning || matched ? '0.9' : '0.08';
+  const guide = faceScan.querySelector('.face-guide');
+  const head = faceScan.querySelector('.face-child-head');
+  const mouth = faceScan.querySelector('.face-mouth');
+  if (guide) guide.style.stroke = matched ? 'var(--mint)' : 'rgba(95, 255, 200, 0.55)';
+  if (head) head.style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
+  if (mouth) mouth.style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
+  const scanLine = faceScan.querySelector('.face-scan-line');
+  if (scanLine) {
+    scanLine.style.stroke = matched ? 'var(--mint)' : 'var(--cyan)';
+    scanLine.style.opacity = off ? '0.08' : scanning || matched ? '0.9' : '0.08';
+  }
 }
 const simulation = { phase: 'waiting', elapsed: 0, duration: 0, busy: false, userVerified: false, userExists: true, attempts: 0, processed: 3, points: 1240, validBottle: true };
 const phases = { face: 4.6, profile: 2.1, register: 2.2, verify: 2.5, insert: 3.4, topSensor: 2.4, validate: 3.6, descend: 2.6, zoneSensor: 2.3, compress: 5.4, impact: 2.4, lift: 2.5, transfer: 2.5, points: 2.8, return: 2.0, reject: 2.2 };
 let showLabels = false;
 let internalView = false;
+let manualViewOverride = false;
 let cameraTween = null;
 viewBtn.setAttribute('aria-pressed', 'false');
 
 function setViewMode(nextInternalView) {
   if (nextInternalView === internalView) return;
+  const currentState = internalView ? { panel: 0.04, inner: 0.72 } : { panel: 0.35, inner: 0.15 };
+  const targetState = nextInternalView ? { panel: 0.04, inner: 0.72 } : { panel: 0.35, inner: 0.15 };
   internalView = nextInternalView;
   const cameraPosition = nextInternalView ? new THREE.Vector3(6.2, 4.9, 8.4) : new THREE.Vector3(6.8, 5.1, 9.2);
   const cameraTarget = nextInternalView ? new THREE.Vector3(0, 2.45, 0) : new THREE.Vector3(0, 2.35, 0);
@@ -356,32 +410,32 @@ function setViewMode(nextInternalView) {
     fromPosition: camera.position.clone().sub(previousCameraOffset),
     toPosition: cameraPosition,
     fromTarget: controls.target.clone(),
-    toTarget: cameraTarget
+    toTarget: cameraTarget,
+    fromPanelOpacity: currentState.panel,
+    toPanelOpacity: targetState.panel,
+    fromInnerOpacity: currentState.inner,
+    toInnerOpacity: targetState.inner
   };
   if (nextInternalView) Object.values(shellFaces).forEach(face => { face.visible = true; });
   controls.enabled = false;
   viewBtn.setAttribute('aria-pressed', String(nextInternalView));
-  viewBtn.innerHTML = `<span class="button-icon">◉</span> Vista ${nextInternalView ? 'Interna' : 'Exterior'}`;
+  viewBtn.textContent = nextInternalView ? 'Ver exterior' : 'Ver interior';
 }
 
-viewBtn.addEventListener('click', () => setViewMode(!internalView));
+viewBtn.addEventListener('click', () => {
+  manualViewOverride = true;
+  setViewMode(!internalView);
+});
 
 function updateCameraTransition(delta) {
   if (!cameraTween) return;
-  cameraTween.elapsed = Math.min(cameraTween.elapsed + delta, cameraTween.duration);
+  const clampedDelta = Math.min(delta, 0.1);
+  cameraTween.elapsed = Math.min(cameraTween.elapsed + clampedDelta, cameraTween.duration);
   const amount = easeInOut(cameraTween.elapsed / cameraTween.duration);
   camera.position.lerpVectors(cameraTween.fromPosition, cameraTween.toPosition, amount);
   controls.target.lerpVectors(cameraTween.fromTarget, cameraTween.toTarget, amount);
-  const panelOffset = internalView ? easeOut(amount) : 1 - easeInOut(amount);
-  shellFaces.front.position.z = panelOffset;
-  shellFaces.right.position.x = panelOffset;
+  applyPanelOpacity(lerp(cameraTween.fromPanelOpacity, cameraTween.toPanelOpacity, amount));
   if (cameraTween.elapsed >= cameraTween.duration) {
-    if (!internalView) {
-      shellFaces.front.position.z = 0;
-      shellFaces.right.position.x = 0;
-      shellFaces.front.visible = true;
-      shellFaces.right.visible = true;
-    }
     cameraTween = null;
     controls.enabled = true;
   }
@@ -403,28 +457,41 @@ function setComponentActive(component, active) {
 function beginPhase(name) {
   simulation.phase=name; simulation.elapsed=0; simulation.duration=phases[name];
   if (name === 'face') {
+    if (!manualViewOverride) setViewMode(false);
     syncFaceScanVisualState('scanning');
-    faceScanStatus.textContent = 'DETECTANDO ROSTRO';
+    faceScanStatus.textContent = 'SIN ROSTRO DETECTADO';
     faceScanPercent.textContent = '0%';
     faceScanName.textContent = '';
-    faceScan.classList.remove('face-animate');
-    void faceScan.offsetWidth;
-    faceScan.classList.add('face-animate');
+    faceScan.style.setProperty('--scan-progress', '0');
+    faceScan.querySelector('.face-guide').classList.remove('ready');
   } else if (name === 'profile') {
+    if (!manualViewOverride) setViewMode(false);
     syncFaceScanVisualState('matched');
     faceScanStatus.textContent = 'COINCIDENCIA 98,7 %';
     faceScanPercent.textContent = '98,7%';
     faceScanName.textContent = document.querySelector('#user-name').textContent.trim();
+    faceScan.style.setProperty('--scan-progress', '1');
+    faceScan.querySelector('.face-guide').classList.add('ready');
   } else if (name === 'verify') {
+    if (!manualViewOverride) setViewMode(false);
     syncFaceScanVisualState('off');
-    faceScanStatus.textContent = 'VERIFICANDO IDENTIDAD';
+    faceScanStatus.textContent = 'COINCIDENCIA 98,7 %';
     faceScanPercent.textContent = '100%';
     faceScanName.textContent = document.querySelector('#user-name').textContent.trim();
+    faceScan.style.setProperty('--scan-progress', '1');
+    faceScan.querySelector('.face-guide').classList.add('ready');
+  } else if (name === 'insert') {
+    if (!manualViewOverride) setViewMode(true);
+    syncFaceScanVisualState('idle');
+    faceScanStatus.textContent = 'USUARIO APROXIMÁNDOSE';
+    faceScanPercent.textContent = '0%';
   } else {
     syncFaceScanVisualState('idle');
     faceScanStatus.textContent = 'SIN ROSTRO DETECTADO';
     faceScanPercent.textContent = '0%';
     faceScanName.textContent = '';
+    faceScan.style.setProperty('--scan-progress', '0');
+    faceScan.querySelector('.face-guide').classList.remove('ready');
   }
   points.style.color = '';
   points.style.textShadow = '';
@@ -488,18 +555,35 @@ function updateSimulation(delta) {
   const progress01 = clamp01(simulation.elapsed / simulation.duration);
   const smooth = easeInOut(progress01);
   if (simulation.phase === 'face') {
+    faceScan.style.setProperty('--scan-progress', progress01.toFixed(3));
     const percentValue = Math.round(progress01 * 100);
     faceScanPercent.textContent = `${percentValue}%`;
-    faceScanStatus.textContent = progress01 < .3 ? 'DETECTANDO ROSTRO' : progress01 < .7 ? 'ANALIZANDO RASGOS' : 'COMPARANDO PERFIL';
+    if (progress01 < 0.25) {
+      faceScanStatus.textContent = 'SIN ROSTRO DETECTADO';
+    } else if (progress01 < 0.5) {
+      faceScanStatus.textContent = 'USUARIO APROXIMÁNDOSE';
+    } else if (progress01 < 0.72) {
+      faceScanStatus.textContent = 'ACERCA EL ROSTRO';
+    } else if (progress01 < 0.9) {
+      faceScanStatus.textContent = 'ANALIZANDO RASGOS';
+    } else {
+      faceScanStatus.textContent = 'COMPARANDO PERFIL';
+    }
+    const guideReady = progress01 > 0.72;
+    const guideEl = faceScan.querySelector('.face-guide');
+    if (guideReady) guideEl.classList.add('ready');
+    else guideEl.classList.remove('ready');
     if (faceScan.dataset.state !== 'scanning') {
       syncFaceScanVisualState('scanning');
     }
   } else if (simulation.phase === 'verify') {
     if (progress01 >= .78 && faceScan.dataset.state !== 'off') {
       syncFaceScanVisualState('off');
-      faceScanStatus.textContent = 'VERIFICANDO IDENTIDAD';
+      faceScanStatus.textContent = 'COINCIDENCIA 98,7 %';
       faceScanPercent.textContent = '100%';
+      faceScan.style.setProperty('--scan-progress', '1');
     } else if (faceScan.dataset.state !== 'off') {
+      faceScan.style.setProperty('--scan-progress', progress01.toFixed(3));
       faceScanPercent.textContent = `${Math.round(progress01 * 100)}%`;
     }
   }
