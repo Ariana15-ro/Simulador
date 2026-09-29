@@ -8,6 +8,16 @@
 </head>
 <body>
     <div id="loading" aria-hidden="true"><div class="loading-kicker">PETFLOW / SYSTEM 01</div><div class="loading-text">Inicializando estación</div><div class="loading-bar"><div class="loading-progress"></div></div></div>
+    <script>
+        window.showStartupError = (message) => {
+            const loading = document.querySelector('#loading');
+            loading.setAttribute('aria-hidden', 'false');
+            loading.dataset.error = 'true';
+            loading.querySelector('.loading-kicker').textContent = 'ERROR DE INICIO';
+            loading.querySelector('.loading-text').textContent = message;
+            loading.querySelector('.loading-bar').classList.add('hidden');
+        };
+    </script>
     <main class="app-shell">
         <header class="topbar"><div class="brand-lockup"><span class="brand-mark">PF</span><div><div class="brand-name">PET<span>Flow</span> Compact</div><div class="brand-meta">Estación inteligente de recuperación PET</div></div></div><div class="topbar-meta"><span class="live-dot"></span> SIMULACIÓN EN VIVO <span class="divider"></span> 01 / 01</div></header>
         <aside id="ui-panel" class="ui-panel">
@@ -31,6 +41,13 @@
             }
         }
     </script>
-    <script type="module" src="main.js"></script>
+    <script type="module">
+        import('./main.js').catch((error) => {
+            console.error('No se pudo iniciar PETFlow Compact.', error);
+            if (!document.querySelector('#loading').dataset.error) {
+                window.showStartupError('No se pudo cargar Three.js o WebGL. Comprueba la conexión y vuelve a intentarlo.');
+            }
+        });
+    </script>
 </body>
 </html>
