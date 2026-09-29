@@ -203,7 +203,7 @@ for (const y of [.48, 2.35, 4.38]) for (const x of [-.86,.86]) lineBox('wooden-c
 box('base', [2.1,.25,2.1], [0,.18,0], darkMat);
 const hopper = new THREE.Mesh(new THREE.CylinderGeometry(.75,1.12,.46,4), hologramMaterial()); hopper.position.set(0,4.34,0); hopper.rotation.y=Math.PI/4; machine.add(hopper); addGlowEdges(hopper);
 box('compaction-chamber', [1.65,1.05,1.65], [0,2.75,0], hologramMaterial());
-const plate = highlightableBox('compactor-plate', [1.32,.16,1.32], [0,3.18,0], glowMat);
+const plate = highlightableBox('compactor-plate', [1.32,.16,1.32], [0,3.18,0], glowMat.clone());
 const containerBottom = box('lower-container', [1.7,.12,1.7], [0,.31,0], darkMat);
 for (const [x,z,width,depth] of [[0,.81,1.7,.08],[0,-.81,1.7,.08],[.81,0,.08,1.7],[-.81,0,.08,1.7]]) box('lower-container-wall', [width,.75,depth], [x,.72,z], darkMat);
 // Servo SG90 on the side with a linkage.
@@ -230,11 +230,11 @@ function updateServoLinkage() {
   linkageJoints[1].position.copy(armEnd);
 }
 // IR sensors and camera.
-const irTop = highlightableBox('ir-top', [.34,.12,.18], [0,4.03,.72], glowMat);
-const irZone = highlightableBox('ir-zone', [.34,.12,.18], [0,2.67,.82], glowMat);
+const irTop = highlightableBox('ir-top', [.34,.12,.18], [0,4.03,.72], glowMat.clone());
+const irZone = highlightableBox('ir-zone', [.34,.12,.18], [0,2.67,.82], glowMat.clone());
 box('ir-top-mounting-plate', [.5,.07,.32], [0,4.13,.72], woodMat);
 box('ir-zone-mounting-plate', [.5,.07,.32], [0,2.77,.82], woodMat);
-const cameraUnit = highlightableBox('camera', [.42,.25,.25], [-1.02,3.92,.5], darkMat); const lens = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.03,20), hologramMaterial()); lens.rotation.x=Math.PI/2; lens.position.set(-1.02,3.92,.66); machine.add(lens);
+const cameraUnit = highlightableBox('camera', [.42,.25,.25], [-1.02,3.92,.5], darkMat.clone()); const lens = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.03,20), hologramMaterial()); lens.rotation.x=Math.PI/2; lens.position.set(-1.02,3.92,.66); machine.add(lens);
 // LCD and status LEDs.
 box('lcd-mounting-plate', [.92,.52,.08], [1.08,1.9,.78], woodMat);
 const lcd = box('lcd', [.72,.32,.1], [1.08,1.9,.87], hologramMaterial());
@@ -353,6 +353,10 @@ function setStatus(text, active=false, detail='') { status.textContent=text; pha
 function setComponentActive(component, active) {
   if (!component) return;
   component.scale.setScalar(active ? 1.22 : 1);
+  if (component.material.uniforms?.uOpacity && component.material !== glowMat && component.material !== darkMat) {
+    component.material.uniforms.uOpacity.value = active ? .92 : .48;
+    component.material.uniforms.uColor.value.setHex(active ? 0x8ff4ff : cyan);
+  }
 }
 function beginPhase(name) {
   simulation.phase=name; simulation.elapsed=0; simulation.duration=phases[name];
@@ -393,6 +397,7 @@ function startSimulation() {
   setPetHologramColor(mint);
   petMaterial.uniforms.uOpacity.value = .95;
   petWireMaterial.opacity = .3;
+  particleMaterial.color.setHex(cyan);
   particles.position.y = 0;
   beginPhase('insert');
 }
@@ -437,12 +442,12 @@ function updateSimulation(delta) {
   } else if (simulation.phase === 'topSensor') {
     const pulse = 1.12 + Math.sin(simulation.elapsed * 18) * .28;
     irTop.scale.setScalar(pulse);
-    irTop.material.opacity = .72 + (Math.sin(simulation.elapsed * 18) + 1) * .14;
+    irTop.material.uniforms.uOpacity.value = .72 + (Math.sin(simulation.elapsed * 18) + 1) * .14;
   } else if (simulation.phase === 'validate') {
     const pulse = 1.18 + Math.sin(simulation.elapsed * 20) * .3;
     irTop.scale.setScalar(pulse); irZone.scale.setScalar(pulse);
-    irTop.material.opacity = .8 + (Math.sin(simulation.elapsed * 20) + 1) * .1;
-    irZone.material.opacity = .8 + (Math.sin(simulation.elapsed * 20 + Math.PI) + 1) * .1;
+    irTop.material.uniforms.uOpacity.value = .8 + (Math.sin(simulation.elapsed * 20) + 1) * .1;
+    irZone.material.uniforms.uOpacity.value = .8 + (Math.sin(simulation.elapsed * 20 + Math.PI) + 1) * .1;
     setPetHologramColor(simulation.validBottle ? mint : 0xff527a);
     petGlowMaterial.color.setHex(simulation.validBottle ? mint : 0xff527a);
   } else if (simulation.phase === 'reject') {
@@ -457,9 +462,9 @@ function updateSimulation(delta) {
     irZone.scale.setScalar(pulse);
   } else if (simulation.phase === 'compress') {
     const weighted = easeInOut(progress01);
-    plate.position.y = lerp(3.18, 2.18, weighted);
+    plate.position.y = lerp(3.18, 2.68, weighted);
     servoArm.rotation.z = lerp(-.2, -1.35, easeOut(progress01));
-    pet.position.y = lerp(3.0, 2.82, weighted);
+    pet.position.y = lerp(3.0, 2.34, weighted);
     pet.scale.set(lerp(1, 1.8, weighted), lerp(1, .18, weighted), lerp(1, 1.8, weighted));
     petMaterial.uniforms.uOpacity.value = .78 + weighted * .2;
     petWireMaterial.opacity = .42 + weighted * .28;
@@ -469,20 +474,20 @@ function updateSimulation(delta) {
     impactRing.scale.setScalar(1 + weighted * 1.8);
     particles.rotation.y += delta * 3.2;
   } else if (simulation.phase === 'impact') {
-    pet.scale.set(1.8, .18, 1.8); pet.position.y = 2.82;
-    plate.position.y = 2.18; servoArm.rotation.z = -1.35;
+    pet.scale.set(1.8, .18, 1.8); pet.position.y = 2.34;
+    plate.position.y = 2.68; servoArm.rotation.z = -1.35;
     petMaterial.uniforms.uOpacity.value = .92;
     petWireMaterial.opacity = .8;
     impactRing.material.opacity = .8 + Math.sin(simulation.elapsed * 18) * .2;
     impactRing.scale.setScalar(2.8 + Math.sin(simulation.elapsed * 10) * .3);
     particles.rotation.y += delta * 4.2; particleMaterial.opacity = 1;
   } else if (simulation.phase === 'lift') {
-    plate.position.y = lerp(2.18, 3.18, easeOut(progress01));
+    plate.position.y = lerp(2.68, 3.18, easeOut(progress01));
     servoArm.rotation.z = lerp(-1.35, -.2, easeOut(progress01));
-    pet.position.y = 2.82; pet.scale.set(1.8, .18, 1.8); particleMaterial.opacity = .7 * (1 - progress01);
+    pet.position.y = 2.34; pet.scale.set(1.8, .18, 1.8); particleMaterial.opacity = .7 * (1 - progress01);
     petMaterial.uniforms.uOpacity.value = .92 - progress01 * .12;
   } else if (simulation.phase === 'transfer') {
-    pet.position.y = lerp(2.82, .94, easeInOut(progress01));
+    pet.position.y = lerp(2.34, .94, easeInOut(progress01));
     pet.scale.set(lerp(1.8, .64, smooth), lerp(.18, .34, smooth), lerp(1.8, .64, smooth));
     particleMaterial.opacity = .28 * (1 - progress01);
   } else if (simulation.phase === 'points') {
@@ -576,4 +581,5 @@ function animate() {
     document.querySelector('#loading').classList.add('hidden');
   }
 }
+resize();
 animate();
